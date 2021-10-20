@@ -6,6 +6,7 @@ import pycubelib.plotting_functions as pf
 
 pi = np.pi
 pi2 = pi * 2
+pi2limit = (-pi, pi)
 
 txt_path = filedialog.askopenfilename(title='TXT file path', filetypes=[('txt files', '*.txt')])
 print(f'> txt_path = {txt_path}')
@@ -17,18 +18,21 @@ dx = gf.find_param(notes, 'dx_um', float)
 nh = gf.find_param(notes, 'nh', int)
 lam_ns = gf.find_param(notes, 'lam_ns', float)
 
-hha_path = txt_path.replace('.txt', f'_aa.png')
-hha, _ = ff.read_png(hha_path)
 sxy = (.3, .3)
-capA, _ = gf.path_parts(hha_path)
-pf.plotAAB(hha, capA=capA, sxy=sxy, pause=.0)
-
+hhhp = [np.zeros((ny, nx))]
 for n in range(nh+1):
-    hhp_path = hha_path.replace('_aa.png', f'_{n}p.png')
-    hhp, _ = ff.read_png(hhp_path)
-    capA, _ = gf.path_parts(hhp_path)
-    gf.what_is('hhp', hhp)
-    pf.plotAAB(hhp, capA=capA, sxy=sxy, pause=.5)
+    if n == 0:
+        hh_path = txt_path.replace('.txt', f'_aa.png')
+    else:
+        hh_path = txt_path.replace('.txt', f'_{n}p.png')
+    hhp, _ = ff.read_png(hh_path, alimit=pi2limit)
+    capA, _ = gf.path_parts(hh_path)
+    pf.plotAAB(hhp, f'hh{n}p', capA=capA, sxy=sxy, pause=.5)
+    hhhp += [hhp]
+hha = hhhp[0]
+
+zz12 = np.mod(hhhp[1] - hhhp[2] + pi, pi2) - pi
+pf.plotAAB(zz12, 'zz12', capA='ZZ12', sxy=sxy)
 
 lam_1ns = np.zeros(nh + 1)
 lam1 = lam_ns[1]
@@ -36,6 +40,7 @@ for n in range(2, nh+1):
     lam_1ns[n] = (lam1 * lam_ns[n]) / (lam1 - lam_ns[n])
 print(gf.prn_list('lam_1ns', lam_1ns, 1))
 
+pf.plt.show()
 
 
 
