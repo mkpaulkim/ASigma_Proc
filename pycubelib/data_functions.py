@@ -1,5 +1,5 @@
 import numpy as np
-import pycubelib.general_functions as gf
+import pycubelib.plotting_functions as pf
 
 
 def renormalize(aa, alimit, blimit, btype=None):
@@ -27,6 +27,29 @@ def get_roi(aa, roi):
 
 
 def stitch(zz12n_in, zz1n, lam12, lam1n):
+    yy = np.round(zz12n_in / lam1n) * lam1n
+    zz = yy + zz1n
+    dzz = zz - zz12n_in
+    ezz = (np.abs(dzz) > (0.5 * lam1n)) * lam1n * np.sign(dzz)
+    zz12n_out = np.mod(zz - ezz + lam12/2, lam12) - lam12/2
+
+    if 1:
+        iy = 950
+        ylimit = (-1.5 * lam12/2, 1.5 * lam12/2)
+        graphs = []
+        graphs += [(zz12n_in[iy, :], (0, 0), 'zz12n_in', ylimit)]
+        graphs += [(zz1n[iy, :], (0, 1), 'zz1n', ylimit)]
+        graphs += [(yy[iy, :], (0, 2), 'yy', ylimit)]
+        graphs += [(zz[iy, :], (0, 3), 'zz', ylimit)]
+        graphs += [(dzz[iy, :], (0, 4), 'dzz', ylimit)]
+        graphs += [(ezz[iy, :], (0, 5), 'ezz', ylimit)]
+        graphs += [(zz12n_out[iy, :], (0, 6), 'zz12n_out', ylimit)]
+        pf.graph_many(graphs, 'stitch', (1, 7), sxy=(.25, .25), pause=1)
+
+    return zz12n_out
+
+
+def stitch_x(zz12n_in, zz1n, lam12, lam1n):
     yy = np.round(zz12n_in / lam1n) * lam1n
     zz = np.mod(yy + zz1n + lam12/2, lam12) - lam12/2
     dzz = np.mod(zz - zz12n_in + lam12/2, lam12) - lam12/2
