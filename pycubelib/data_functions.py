@@ -37,7 +37,7 @@ def stitch(zz12n_in, zz1n, lam12, lam1n):
     ezz = (np.abs(dzz) > (0.5 * lam1n)) * lam1n * np.sign(dzz)
     zz12n_out = np.mod(zz - ezz + lam12/2, lam12) - lam12/2
 
-    if 0:
+    if 1:
         iy = 950
         ylimit = (-1.5 * lam12/2, 1.5 * lam12/2)
         graphs = []
@@ -77,7 +77,7 @@ def calib_lam1n(zz12n_in, ep1n, lam12, lam1n):
                   (zz1n[iy, :], (0, 1), f'zz1n: lam1n = {lam1n:.1f}', lam12limit),
                   (dzz[iy, :], (0, 2), f'dzz', lam12limit)]
         pf.graph_many(graphs, 'calib', col_row=(1, 3), sxy=(.35, .4), pause=1)
-        pf.graphB(histo, caption='histogram', xpars=(-lam12/2, dlam), sxy=(7.5, .3), line='-+', pause=1)
+        pf.graphB(histo, caption='histogram', sxy=(7.5, .3), line='-+', pause=1)
 
     return lam1n
 

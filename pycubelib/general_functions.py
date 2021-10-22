@@ -84,12 +84,42 @@ def find_param(text, varname, typ=int):
     if len(bb) == 1:
         bb = bb[0]
 
-    return bb
-
     # if typ == 'float': val = float(txt)
     # elif typ == 'int': val = int(txt)
     # else: val = txt
     # return val
+
+    return bb
+
+
+def get_aaroi(aa, roi):
+    ix, iy, rx, ry = roi
+    rx1 = ix - rx//2
+    rx2 = ix + rx//2
+    ry1 = iy - ry//2
+    ry2 = iy + ry//2
+    aa_roi = aa[ry1:ry2, rx1:rx2]
+    return aa_roi
+
+
+def roi_measure(aa, roi):
+    aa_roi = get_aaroi(aa, roi)
+    roi_ave = np.mean(aa_roi)
+    roi_std = np.std(aa_roi)
+    return roi_ave, roi_std
+
+
+def roi_cyclic_measure(zz, roi, zlambda):
+    zz_roi = get_aaroi(zz, roi)
+    cc = np.cos(zz_roi * pi2 / zlambda)
+    ss = np.sin(zz_roi * pi2 / zlambda)
+    c_ave = np.mean(cc)
+    s_ave = np.mean(ss)
+    cyc_ave = np.arctan2(s_ave, c_ave) * zlambda / pi2
+    c_med = np.median(cc)
+    s_med = np.median(ss)
+    cyc_med = np.arctan2(s_med, c_med) * zlambda / pi2
+    return cyc_ave, cyc_med
 
 
 if __name__ == '__main__':

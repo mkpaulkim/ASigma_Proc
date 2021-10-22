@@ -9,7 +9,8 @@ pi = np.pi
 pi2 = pi * 2
 pi2limit = (-pi, pi)
 sxy = (.35, .35)
-roi = (560, 950, 10, 10)
+roi = (500, 1000, 10, 10)
+z0_roi = -2000.
 
 # txt_path = filedialog.askopenfilename(title='TXT file path', filetypes=[('txt files', '*.txt')])
 txt_path = '/media/mkpaulkim/Ultra Touch/{{UT White}}/Dropbox/[[ PROJECTS.dbox ]]/project folders 2021/proj 2021-10 AlphaSigma/temp_data/aaa.txt'
@@ -23,6 +24,7 @@ print(f'> txt_path = {txt_path}')
 print(f'> notes: \n{notes}')
 blank = np.zeros((ny, nx))
 
+''' read hhh '''
 hhhp = []
 for n in range(nh+1):
     if n == 0:
@@ -36,6 +38,7 @@ for n in range(nh+1):
     hhhp += [hh]
 hha = hhhp[0]
 
+''' get lam_1ns '''
 lam_1ns = np.zeros(nh + 1)
 lam1 = lam_ns[1]
 for n in range(2, nh+1):
@@ -44,23 +47,32 @@ for n in range(2, nh+1):
 print(gf.prn_list('lam_1ns', lam_1ns, 1))
 lam12 = lam_1ns[2]
 
+''' make zz_1ns '''
 zz_1ns = [blank, blank]
 ep_1ns = [blank, blank]
 for n in range(2, nh+1):
+    lam1n = lam_1ns[n]
     ep1n = np.mod(hhhp[n] - hhhp[1] + pi, pi2) - pi
-    zz1n = ep1n * lam_1ns[n] / pi2
+    zz1n_ = ep1n * lam_1ns[n] / pi2
+    _, z_roi = gf.roi_cyclic_measure(zz1n_, roi, lam1n)
+    zz1n = np.mod(zz1n_ - z_roi + z0_roi + lam1n/2, lam1n) - lam1n/2
+    # _, z1_roi = gf.roi_measure(zz1n, roi)
+    # print(f'< z_roi = {z_roi:.1f}, z0_roi = {z0_roi:.1f}, z1_roi = {z1_roi:.1f}')
+
     ep_1ns += [ep1n]
     zz_1ns += [zz1n]
-    # pf.plotAAB(zz1n, capA=f'ZZ1{n}', roi=roi, sxy=sxy, pause=1)
+    pf.plotAAB(zz1n, capA=f'ZZ1{n}', roi=roi, sxy=sxy, pause=1)
 
+''' make zz_12ns '''
 zz_12ns = [blank, blank, zz_1ns[2]]
 for n in range(3, nh+1):
 
-    lam_1ns[n] = df.calib_lam1n(zz_12ns[n-1], ep_1ns[n], lam12, lam_1ns[n])
+    # lam_1ns[n] = df.calib_lam1n(zz_12ns[n-1], ep_1ns[n], lam12, lam_1ns[n])
     zz_12n = df.stitch(zz_12ns[n-1], zz_1ns[n], lam_1ns[2], lam_1ns[n])
     zz_12ns += [zz_12n]
     pf.plotAAB(zz_12n, capA=f'ZZ12{n}: lam_1{n} = {lam_1ns[n]:.1f}', roi=roi, sxy=sxy, pause=1)
 
+''' graph all '''
 graphs = []
 ix, iy, rx, ry = roi
 print(f'< roi = {roi}')
