@@ -1,5 +1,9 @@
 import numpy as np
 import pycubelib.plotting_functions as pf
+import pycubelib.general_functions as gf
+
+pi = np.pi
+pi2 = pi * 2
 
 
 def renormalize(aa, alimit, blimit, btype=None):
@@ -33,7 +37,7 @@ def stitch(zz12n_in, zz1n, lam12, lam1n):
     ezz = (np.abs(dzz) > (0.5 * lam1n)) * lam1n * np.sign(dzz)
     zz12n_out = np.mod(zz - ezz + lam12/2, lam12) - lam12/2
 
-    if 1:
+    if 0:
         iy = 950
         ylimit = (-1.5 * lam12/2, 1.5 * lam12/2)
         graphs = []
@@ -47,6 +51,35 @@ def stitch(zz12n_in, zz1n, lam12, lam1n):
         pf.graph_many(graphs, 'stitch', (1, 7), sxy=(.25, .25), pause=1)
 
     return zz12n_out
+
+
+def calib_lam1n(zz12n_in, ep1n, lam12, lam1n):
+    nbin = 100
+    dlam = lam12 / nbin
+    iy = 540
+    lam12limit = (-lam12/2, lam12/2)
+
+    print(f'>>> lam1n_in = {lam1n:.1f}')
+    while True:
+        ans = float(input('> lam1n = '))
+        if ans:
+            lam1n = ans
+        else:
+            break
+
+        zz1n = ep1n * lam1n / pi2
+        dzz = zz12n_in - zz1n
+        # pf.plotAAB(dzz, capA=f'dzz: lam1n = {lam1n:.1f}', sxy=(.35, .35), pause=1)
+
+        histo, uu = np.histogram(dzz, bins=nbin, range=(-lam12/2, lam12/2))
+
+        graphs = [(zz12n_in[iy, :], (0, 0), f'zz12n: lam12 = {lam12:.1f}', lam12limit),
+                  (zz1n[iy, :], (0, 1), f'zz1n: lam1n = {lam1n:.1f}', lam12limit),
+                  (dzz[iy, :], (0, 2), f'dzz', lam12limit)]
+        pf.graph_many(graphs, 'calib', col_row=(1, 3), sxy=(.35, .4), pause=1)
+        pf.graphB(histo, caption='histogram', xpars=(-lam12/2, dlam), sxy=(7.5, .3), line='-+', pause=1)
+
+    return lam1n
 
 
 def stitch_x(zz12n_in, zz1n, lam12, lam1n):
