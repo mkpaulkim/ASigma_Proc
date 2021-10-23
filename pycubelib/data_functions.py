@@ -38,7 +38,7 @@ def stitch(zz12n_in, zz1n, lam12, lam1n):
     zz12n_out = np.mod(zz - ezz + lam12/2, lam12) - lam12/2
 
     if 1:
-        iy = 950
+        iy = 900
         ylimit = (-1.5 * lam12/2, 1.5 * lam12/2)
         graphs = []
         graphs += [(zz12n_in[iy, :], (0, 0), 'zz12n_in', ylimit)]

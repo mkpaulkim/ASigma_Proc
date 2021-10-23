@@ -9,8 +9,8 @@ pi = np.pi
 pi2 = pi * 2
 pi2limit = (-pi, pi)
 sxy = (.35, .35)
-roi = (250, 500, 10, 10)
-z0_roi = 2500.
+roi = (250, 900, 10, 10)
+z0_roi = -2000.
 
 txt_path = filedialog.askopenfilename(title='TXT file path', filetypes=[('txt files', '*.txt')])
 # txt_path = '/media/mkpaulkim/Ultra Touch/{{UT White}}/Dropbox/[[ PROJECTS.dbox ]]/project folders 2021/proj 2021-10 AlphaSigma/temp_data/aaa.txt'
