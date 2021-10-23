@@ -47,7 +47,7 @@ def what_is(name, var, cmax=200):
 
 
 def prn_list(aname, alist, m=3):
-    outstring = f'> {aname} = ' + ', '.join(f'{a:.{m}f}' for a in alist) + '; '
+    outstring = f'> {aname} = [' + ', '.join(f'{a:.{m}f}' for a in alist) + ']; '
     # print(outstring)
     return outstring
 
@@ -79,18 +79,55 @@ def find_param(text, varname, typ=int):
     txt = txt[:txt.find(';')]
     # print(f'< txt = {txt}')
 
-    aa = txt.split(',')
-    bb = [typ(float(a)) for a in aa]
-    if len(bb) == 1:
-        bb = bb[0]
+    t = txt.find('[')
+    if t < 0:
+        val = typ(float(txt))
+    else:
+        txt = txt[t+1: -1]
+        # print(f'<1 txt = {txt}')
+        vv = txt.split(',')
+        val = [typ(float(v)) for v in vv]
+
+
+    # aa = txt.split(',')
+    # bb = [typ(float(a)) for a in aa]
+    # if len(bb) == 1:
+    #     bb = bb[0]
 
     # if typ == 'float': val = float(txt)
     # elif typ == 'int': val = int(txt)
     # else: val = txt
     # return val
 
-    return bb
+    return val
 
+
+# def find_param(text, varname, typ=int):
+#     """find numerical value of a variable: works for scalar or list of int or float"""
+#
+#     text = str.lower(text)
+#     varname = str.lower(varname)
+#     t = text.find(varname)
+#     if t < 0:
+#         return np.nan
+#
+#     txt = text[t:]
+#     txt = txt[txt.find('=')+1:]
+#     txt = txt[:txt.find(';')]
+#     # print(f'< txt = {txt}')
+#
+#     aa = txt.split(',')
+#     bb = [typ(float(a)) for a in aa]
+#     if len(bb) == 1:
+#         bb = bb[0]
+#
+#     # if typ == 'float': val = float(txt)
+#     # elif typ == 'int': val = int(txt)
+#     # else: val = txt
+#     # return val
+#
+#     return bb
+#
 #
 # def find_paramlist(text, varname, typ=int):
 #     """ for old data files """
@@ -147,9 +184,10 @@ if __name__ == '__main__':
     # print(f'short_path = {s_path}')
     # print(f'fname = {dict_parts["fname"]}')
 
-    bb = find_param('lam_ns = 0.000, 0.602, 0.602, 0.601, 0.601, 0.600; ', 'lam_ns', float)
+    text = 'lam_ns = [0.000, 0.602, 0.602, 0.601, 0.601, 0.600]; psi = 18.3456;'
+    bb = find_param(text, 'lam_ns', float)
+    b = find_param(text, 'psi')
     print(f'< bb = {bb}')
-    b = find_param('psi = 18.0;', 'psi')
     print(f'< b = {b}')
 
 
