@@ -9,11 +9,11 @@ pi = np.pi
 pi2 = pi * 2
 pi2limit = (-pi, pi)
 sxy = (.35, .35)
-roi = (500, 1000, 10, 10)
+roi = (250, 1000, 10, 10)
 z0_roi = -2000.
 
-# txt_path = filedialog.askopenfilename(title='TXT file path', filetypes=[('txt files', '*.txt')])
-txt_path = '/media/mkpaulkim/Ultra Touch/{{UT White}}/Dropbox/[[ PROJECTS.dbox ]]/project folders 2021/proj 2021-10 AlphaSigma/temp_data/aaa.txt'
+txt_path = filedialog.askopenfilename(title='TXT file path', filetypes=[('txt files', '*.txt')])
+# txt_path = '/media/mkpaulkim/Ultra Touch/{{UT White}}/Dropbox/[[ PROJECTS.dbox ]]/project folders 2021/proj 2021-10 AlphaSigma/temp_data/bbb.txt'
 notes, txt_path = ff.read_txt(txt_path)
 nx = gf.find_param(notes, 'nx', int)
 ny = gf.find_param(notes, 'ny', int)
@@ -85,6 +85,8 @@ for n in range(3, nh+1):
     graphs += [(zz_12ns[n][iy, :], (n-1, 2), f'ZZ_12{n}', (-lam12/2, lam12/2))]
 
 pf.graph_many(graphs, col_row=(3, nh), sxy=(.25, .25), pause=1)
+
+pf.mayaviAA(zz_12ns[-1])
 
 pf.plt.show()
 

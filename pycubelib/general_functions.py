@@ -91,6 +91,21 @@ def find_param(text, varname, typ=int):
 
     return bb
 
+#
+# def find_paramlist(text, varname, typ=int):
+#     """ for old data files """
+#     text = str.lower(text)
+#     varname = str.lower(varname)
+#     t = text.find(varname)
+#     if t < 0:
+#         return np.nan
+#
+#     txt = text[t:]
+#     txt = txt[txt.find('=')+1:]
+#     txt = txt.replace('[', '').replace(']', ';')
+#
+#     aa = txt.split()
+
 
 def get_aaroi(aa, roi):
     ix, iy, rx, ry = roi
