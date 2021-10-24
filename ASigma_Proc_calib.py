@@ -24,10 +24,10 @@ nw = gf.find_param(note, 'nw', int)
 wln = gf.find_param(note, 'wln', float)
 if wln[0] != 0.:
     wln = [0.] + wln
+blank = np.zeros((ny, nx))
 
 print(f'> txt_path = {txt_path}')
 print(f'> notes: \n{notes}')
-blank = np.zeros((ny, nx))
 
 ''' read hhh '''
 hhhp = []
@@ -55,29 +55,32 @@ print(gf.prn_list('wln', wln, 8))
 print(gf.prn_list('lam_1ns', lam_1ns, 1))
 
 ''' make zz_1ns '''
-zz_1ns = [blank, blank]
+lam_1ns0 = lam_1ns.copy()
 ep_1ns = [blank, blank]
+zz_1ns = [blank, blank]
 for n in range(2, nw + 1):
     lam1n = lam_1ns[n]
     ep1n = np.mod(hhhp[n] - hhhp[1] + pi, pi2) - pi
-    zz1n_ = ep1n * lam1n / pi2
-    _, z_roi = gf.roi_cyclic_measure(zz1n_, roi, lam1n)
-    zz1n = np.mod(zz1n_ - z_roi + z0_roi + lam1n/2, lam1n) - lam1n/2
+    zp1n = ep1n * lam1n / pi2
+    z_roi, _ = gf.roi_cyclic_measure(zp1n, roi, lam1n)
+    zz1n = np.mod(zp1n - z_roi + z0_roi + lam1n/2, lam1n) - lam1n/2
     # _, z1_roi = gf.roi_measure(zz1n, roi)
     # print(f'< z_roi = {z_roi:.1f}, z0_roi = {z0_roi:.1f}, z1_roi = {z1_roi:.1f}')
 
     ep_1ns += [ep1n]
     zz_1ns += [zz1n]
-    pf.plotAAB(zz1n, capA=f'ZZ1{n}', roi=roi, sxy=sxy, pause=1)
+    # pf.plotAAB(zz1n, capA=f'ZZ1{n}', roi=roi, sxy=sxy, pause=1)
 
 ''' make zz_12ns '''
 zz_12ns = [blank, blank, zz_1ns[2]]
 for n in range(3, nw + 1):
-
     lam_1ns[n] = df.calib_lam1n(zz_12ns[n-1], zz_1ns[n], lam12, lam_1ns[n], roi)
-    zz_12n = df.stitch(zz_12ns[n-1], zz_1ns[n], lam_1ns[2], lam_1ns[n])
+
+    zz_12n = df.stitch(zz_12ns[n-1], zz_1ns[n], lam12, lam_1ns[n])
     zz_12ns += [zz_12n]
     pf.plotAAB(zz_12n, capA=f'ZZ12{n}: lam_1{n} = {lam_1ns[n]:.1f}', roi=roi, sxy=sxy, pause=1)
+print(gf.prn_list('lam_1ns0', lam_1ns0, 1))
+print(gf.prn_list('lam_1ns', lam_1ns, 1))
 
 ''' graph all '''
 graphs = []
