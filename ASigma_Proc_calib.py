@@ -58,29 +58,50 @@ print(gf.prn_list('lam_1ns', lam_1ns, 1))
 lam_1ns0 = lam_1ns.copy()
 ep_1ns = [blank, blank]
 zz_1ns = [blank, blank]
+ave_1ns = [0, 0]
+std_1ns = [0, 0]
 for n in range(2, nw + 1):
     lam1n = lam_1ns[n]
     ep1n = np.mod(hhhp[n] - hhhp[1] + pi, pi2) - pi
     zp1n = ep1n * lam1n / pi2
     z_roi, _ = gf.roi_cyclic_measure(zp1n, roi, lam1n)
     zz1n = np.mod(zp1n - z_roi + z0_roi + lam1n/2, lam1n) - lam1n/2
+
+    ave1n, std1n = gf.roi_measure(zz1n, roi)
     # _, z1_roi = gf.roi_measure(zz1n, roi)
     # print(f'< z_roi = {z_roi:.1f}, z0_roi = {z0_roi:.1f}, z1_roi = {z1_roi:.1f}')
 
     ep_1ns += [ep1n]
     zz_1ns += [zz1n]
-    # pf.plotAAB(zz1n, capA=f'ZZ1{n}', roi=roi, sxy=sxy, pause=1)
+    ave_1ns += [ave1n]
+    std_1ns += [std1n]
+
+    pf.plotAAB(zz1n, capA=f'ZZ1{n}', capB=f'ave = {ave1n:.1f}; std = {std1n:.1f}', roi=roi, sxy=sxy, pause=1)
+
+print(gf.prn_list('ave_1ns', ave_1ns, 1))
+print(gf.prn_list('std_1ns', std_1ns, 1))
+pf.plt.close()
 
 ''' make zz_12ns '''
 zz_12ns = [blank, blank, zz_1ns[2]]
+ave_12ns = [0, 0, ave_1ns[2]]
+std_12ns = [0, 0, std_1ns[2]]
 for n in range(3, nw + 1):
     lam_1ns[n] = df.calib_lam1n(zz_12ns[n-1], zz_1ns[n], lam12, lam_1ns[n], roi)
+    zz12n = df.stitch(zz_12ns[n-1], zz_1ns[n], lam12, lam_1ns[n])
 
-    zz_12n = df.stitch(zz_12ns[n-1], zz_1ns[n], lam12, lam_1ns[n])
-    zz_12ns += [zz_12n]
-    pf.plotAAB(zz_12n, capA=f'ZZ12{n}: lam_1{n} = {lam_1ns[n]:.1f}', roi=roi, sxy=sxy, pause=1)
-print(gf.prn_list('lam_1ns0', lam_1ns0, 1))
-print(gf.prn_list('lam_1ns', lam_1ns, 1))
+    ave12n, std12n = gf.roi_measure(zz12n, roi)
+
+    zz_12ns += [zz12n]
+    ave_12ns += [ave12n]
+    std_12ns += [std12n]
+
+    pf.plotAAB(zz12n, capA=f'ZZ12{n}: lam_1{n} = {lam_1ns[n]:.1f}', capB=f'ave = {ave12n:.1f}; std = {std12n:.1f}', roi=roi, sxy=sxy, pause=1)
+
+print(gf.prn_list('lam_1ns_old', lam_1ns0, 1))
+print(gf.prn_list('lam_1ns_new', lam_1ns, 1))
+print(gf.prn_list('ave_12ns', ave_12ns, 1))
+print(gf.prn_list('std_12ns', std_12ns, 1))
 
 ''' graph all '''
 graphs = []
