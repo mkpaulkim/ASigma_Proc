@@ -36,7 +36,7 @@ def plotAA(AA, figname='plotAA', caption='', ulimit=(), sxy=(1, 1), cmap='gray',
     plt_end(pause)
 
 
-def graphB(B, figname='graphB', caption='', ulimit=(), sxy=(1, .3), line='#1f77b4', pause=0.):
+def graphB(B, figname='graphB', caption='', ulimit=(), xpars=(), sxy=(1, .3), line='#1f77b4', pause=0.):
     """
     xpars = (x0, dx); () no axes;
     sxy = (sx, sy): stretch figx by sx and figy by sy * figx
@@ -47,15 +47,15 @@ def graphB(B, figname='graphB', caption='', ulimit=(), sxy=(1, .3), line='#1f77b
     sx, sy = sxy
     figxy = (nx * sx / dpi, nx * sx * sy / dpi)
 
-    # nobox = (len(xpars) == 0)
-    # if nobox:
-    #     xpars = (0, 1)
-    # x0, dx = xpars
-    # xx = x0 + np.arange(nx) * dx
+    nobox = (len(xpars) == 0)
+    if nobox:
+        xpars = (0, 1)
+    x0, dx = xpars
+    xx = x0 + np.arange(nx) * dx
 
     plt.figure(figname, figsize=figxy, tight_layout=True)
     plt.clf()
-    plt.plot(B, line)
+    plt.plot(xx, B, line)
 
     plt.title(caption)
     plt.autoscale(enable=True, axis='x', tight=True)
@@ -63,9 +63,9 @@ def graphB(B, figname='graphB', caption='', ulimit=(), sxy=(1, .3), line='#1f77b
         plt.ylim(ulimit)
     plt.grid(True)
 
-    # fig = plt.gca()
-    # if nobox:
-    #     fig.xaxis.set_visible(False)
+    fig = plt.gca()
+    if nobox:
+        fig.xaxis.set_visible(False)
 
     plt_end(pause)
 

@@ -9,11 +9,12 @@ pi = np.pi
 pi2 = pi * 2
 pi2limit = (-pi, pi)
 sxy = (.35, .35)
-roi = (250, 900, 10, 10)
-z0_roi = -2000.
+roi = (1000, 900, 10, 10)
+z0_roi = 0.
 
-txt_path = filedialog.askopenfilename(title='TXT file path', filetypes=[('txt files', '*.txt')])
-# txt_path = '/media/mkpaulkim/Ultra Touch/{{UT White}}/Dropbox/[[ PROJECTS.dbox ]]/project folders 2021/proj 2021-10 AlphaSigma/temp_data/aaa.txt'
+# txt_path = filedialog.askopenfilename(title='TXT file path', filetypes=[('txt files', '*.txt')])
+txt_path = '/media/mkpaulkim/Ultra Touch/{{UT White}}/Dropbox/[[ PROJECTS.dbox ]]' \
+           '/project folders 2021/proj 2021-10 AlphaSigma/temp_data/eee7.txt'
 notes, txt_path = ff.read_txt(txt_path)
 note = notes[notes.find('%%%'):]
 nx = gf.find_param(note, 'nx', int)
@@ -73,7 +74,7 @@ for n in range(2, nw + 1):
 zz_12ns = [blank, blank, zz_1ns[2]]
 for n in range(3, nw + 1):
 
-    # lam_1ns[n] = df.calib_lam1n(zz_12ns[n-1], ep_1ns[n], lam12, lam_1ns[n])
+    lam_1ns[n] = df.calib_lam1n(zz_12ns[n-1], zz_1ns[n], lam12, lam_1ns[n], roi)
     zz_12n = df.stitch(zz_12ns[n-1], zz_1ns[n], lam_1ns[2], lam_1ns[n])
     zz_12ns += [zz_12n]
     pf.plotAAB(zz_12n, capA=f'ZZ12{n}: lam_1{n} = {lam_1ns[n]:.1f}', roi=roi, sxy=sxy, pause=1)
