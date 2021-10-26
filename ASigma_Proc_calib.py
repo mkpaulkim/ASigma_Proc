@@ -88,7 +88,7 @@ zz_12ns = [blank, blank, zz_1ns[2]]
 ave_12ns = [0, 0, ave_1ns[2]]
 std_12ns = [0, 0, std_1ns[2]]
 for n in range(3, nw + 1):
-    # lam_1ns[n] = df.calib_lam1n(zz_12ns[n-1], zz_1ns[n], lam12, lam_1ns[n], roi)
+    lam_1ns[n] = df.calib_lam1n(zz_12ns[n-1], zz_1ns[n], lam12, lam_1ns[n], roi)
     zz12n = df.stitch(zz_12ns[n-1], zz_1ns[n], lam12, lam_1ns[n])
 
     ave12n, std12n = gf.roi_measure(zz12n, roi)
