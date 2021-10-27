@@ -4,12 +4,12 @@ tkfont = 'Consolas 10'
 bg_r = 'gray85'
 
 
-def tkwindow(title, window=(20, 20, 500, 300), tkbg='gray75'):
+def tkwindow(title, window=(20, 20, 500, 300), tkbg='gray85'):
     tkw = tk.Tk()
     tkw.title(title)
     x0, y0, ax, ay = window
     tkw.geometry(f'{ax}x{ay}+{x0}+{y0}')
-    tkw.iconbitmap('.\\qcam_setup\\hcube.ico')
+    # tkw.iconbitmap('./pycubelib/hcube.ico')
     tkw.config(bg=tkbg)
     return tkw
 
