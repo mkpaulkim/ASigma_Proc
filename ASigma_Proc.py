@@ -8,6 +8,7 @@ import pycubelib.data_functions as df
 pi = np.pi
 pi2 = pi * 2
 pi2limit = (-pi, pi)
+sxy = (1, 1)
 
 nxydw = (0, 0, 0, 0)
 wln = []
@@ -30,21 +31,22 @@ btn_inv = fp.CmdButton(tkw, (450, 200, 5), 'inv')
 btn_nextn = fp.CmdButton(tkw, (100, 200, 10), 'next n', 'orange')
 btn_makezz = fp.CmdButton(tkw, (100, 250, 10), 'make ZZ_n', 'orange')
 ent_lam1n = fp.ParamEntry(tkw, (300, 250, 15), 0, 'lam_1n')
+btn_detail = fp.CmdButton(tkw, (450, 250, 5), 'detail')
 prog_n = fp.ProgressBar(tkw, (100, 300, 410), '')
 ent_roi = fp.ParamEntry(tkw, (700, 50, 25), '1000, 500, 10, 10', 'roi')
 ent_z0 = fp.ParamEntry(tkw, (700, 100, 15), 0.0, 'Z0_roi')
-ent_sxy = fp.ParamEntry(tkw, (700, 150, 15), '.35, .35', 'sxy')
+# ent_sxy = fp.ParamEntry(tkw, (700, 150, 15), '.35, .35', 'sxy')
 
 btn_adios = fp.CmdButton(tkw, (700, 300, 10), 'adios', 'indian red')
 
 
 def program_loop():
-    global roi, z0_roi, sxy
+    global roi, z0_roi
     nx, ny, dx, nw = nxydw
 
     roi = tuple(ent_roi.get_list_val())
     z0_roi = ent_z0.get_val(float)
-    sxy = tuple(ent_sxy.get_list_val(float))
+    # sxy = tuple(ent_sxy.get_list_val(float))
 
     tkw.after(tloop, program_loop)
 
@@ -86,7 +88,7 @@ def read_phs():
         prog_n.setval(100 * (n) / nw)
         ent_phspath.set_entry(hh_path)
         capA, _ = gf.path_parts(hh_path)
-        pf.plotAAB(hh, capA=capA, roi=roi, sxy=sxy, pause=1)
+        pf.plotAAB(hh, capA=capA, roi=roi, sxy=sxy)
 
 
 def get_lam1ns():
@@ -115,33 +117,23 @@ def nextn():
     ent_n.set_entry(n)
     prog_n.setval(100 * n / nw)
     ent_lam1n.set_entry(f'{lam_1ns[n]:.1f}')
-    # if n > 0:
     make_zz()
 
 
 def make_zz():
     global zz_ns, zz_1ns, zz_12ns
-    # nx, ny, dx, nw = nxydw
-
-    # n = np.mod(ent_n.get_val() + 1, nw+1)
-    # ent_n.set_entry(n)
-    # prog_n.setval(100 * n / nw)
-    # if n == 0:
-    #     return
 
     n = ent_n.get_val()
     sign = 1 - btn_inv.is_on() * 2
-    # ent_lam1n.set_entry(f'{lam_1ns[n]:.1f}')
     lam1n = lam_1ns[n] = ent_lam1n.get_val(float)
     lam12 = lam_1ns[2]
 
     if n >= 1:
         zz_ns[n] = sign * hhh[n] * wln[n] / pi2
 
-        pf.plotAAB(zz_ns[n], figname='ZZn', capA=f'ZZ_{n}', capB=f'lam_{n} = {wln[n]:.8f}', roi=roi, sxy=sxy, pause=1)
+        pf.plotAAB(zz_ns[n], figname='ZZn', capA=f'ZZ_{n}', capB=f'lam_{n} = {wln[n]:.8f}', roi=roi, sxy=sxy)
 
     if n >= 2:
-        # lam1n = lam_1ns[n]
         ep1n = np.mod(sign * (hhh[1] - hhh[n]) + pi, pi2) - pi
         zz1n_ = ep1n * lam1n / pi2
 
@@ -149,20 +141,24 @@ def make_zz():
         zz_1ns[n] = np.mod(zz1n_ - z_roi + z0_roi + lam1n/2, lam1n) - lam1n/2
 
         pf.plotAAB(zz_1ns[n], figname='ZZ1n', capA=f'ZZ_1{n}',
-                   capB=f'lam_1{n} = {lam_1ns[n]:.1f}', roi=roi, sxy=sxy, pause=1)
+                   capB=f'lam_1{n} = {lam_1ns[n]:.1f}', roi=roi, sxy=sxy)
 
     if n == 2:
         zz_12ns[2] = zz_1ns[2].copy()
 
     if n >= 3:
-        # lam12 = lam_1ns[2]
-        # lam_1ns[n] = df.calib_lam1n(zz_12ns[n-1], zz_1ns[n], lam12, lam_1ns[n], roi)
-        df.calib_lam1n(zz_12ns[n-1], zz_1ns[n], lam1n, roi)
-        zz_12ns[n] = df.stitch(zz_12ns[n-1], zz_1ns[n], lam12, lam_1ns[n])
+        graphs, gxy = df.calib_lam1n(zz_12ns[n-1], zz_1ns[n], lam1n, roi)
+        if btn_detail.is_on():
+            pf.graph_many(graphs, 'calibrate', gxy)
+
+        zz_12ns[n], graphs, gxy = df.stitch(zz_12ns[n-1], zz_1ns[n], lam12, lam_1ns[n], roi)
+        if btn_detail.is_on():
+            pf.graph_many(graphs, 'stitch', gxy, sxy=(1, .75))
 
     if n >= 2:
         _, noise = gf.roi_measure(zz_12ns[n], roi)
-        pf.plotAAB(zz_12ns[n], figname='ZZ12n', capA=f'ZZ_12{n}', roi=roi, sxy=sxy, pause=1,
+
+        pf.plotAAB(zz_12ns[n], figname='ZZ12n', capA=f'ZZ_12{n}', roi=roi, sxy=sxy,
                    capB=f'lam12 = {lam_1ns[2]:.1f}; lam1{n} = {lam_1ns[n]:.1f}; noise = {noise:.1f}')
 
 
@@ -178,6 +174,7 @@ btn_lam1ns.command(get_lam1ns)
 btn_nextn.command(nextn)
 btn_makezz.command(make_zz)
 btn_inv.command(btn_inv.switch)
+btn_detail.command(btn_detail.switch)
 btn_adios.command(adios)
 
 tloop = 10

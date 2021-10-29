@@ -1,61 +1,50 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-dpi = 100
+figx0 = 6.5
 font0 = 'Consolas 10'
 
 
-def plotAA(AA, figname='plotAA', caption='', ulimit=(), sxy=(1, 1), cmap='gray', pause=0.):
-    """
-    xypars = (x0, y0, dx, dy); () no axes;
-    sxy = (sx, sy): stretch figure from default size
-    """
+def plotAA(AA, figname='plotAA', caption='', ulimit=(), sxy=(1, 1), cmap='gray', pause=1):
 
     ny, nx = np.shape(AA)
-    figxy = (nx * sxy[0] / dpi, ny * sxy[1] / dpi)
+    sx, sy = sxy
+    figx = figx0 * sx
+    figy = figx * (ny / nx) * sy
+    figxy = (figx, figy)
 
     if ulimit:
         AA = np.clip(AA, ulimit[0], ulimit[1])
 
-    # nobox = (len(xypars) == 0)
-    # if nobox:
-    #     xypars = (0, 0, 1, 1)
-    # x0, y0, dx, dy = xypars
-    # extent = (x0, x0 + dx*nx, y0, y0 + dy*ny)
-
-    plt.figure(figname, figsize=figxy, dpi=dpi, tight_layout=True)
+    plt.figure(figname, figsize=figxy, tight_layout=True)
     plt.clf()
     plt.imshow(AA, cmap=cmap, aspect='auto')
     plt.title(caption)
 
-    # fig = plt.gca()
-    # if nobox:
-    #     fig.axes.get_xaxis().set_visible(False)
-    #     fig.axes.get_yaxis().set_visible(False)
-
     plt_end(pause)
 
 
-def graphB(B, figname='graphB', caption='', ulimit=(), xpars=(), sxy=(1, .3), line='#1f77b4', pause=0.):
-    """
-    xpars = (x0, dx); () no axes;
-    sxy = (sx, sy): stretch figx by sx and figy by sy * figx
-    """
+def graphB(B, figname='graphB', caption='', ulimit=(), xlimit=(), sxy=(1, 1), line='#1f77b4', pause=1):
+
+    sy0 = 0.3
+
+    sx, sy = sxy
+    figx = figx0 * sx
+    figy = figx * sy0 * sy
+    figxy = (figx, figy)
 
     B = np.transpose(B)
     nx = len(B)
-    sx, sy = sxy
-    figxy = (nx * sx / dpi, nx * sx * sy / dpi)
-
-    nobox = (len(xpars) == 0)
-    if nobox:
-        xpars = (0, 1)
-    x0, dx = xpars
-    xx = x0 + np.arange(nx) * dx
 
     plt.figure(figname, figsize=figxy, tight_layout=True)
     plt.clf()
-    plt.plot(xx, B, line)
+
+    if xlimit == ():
+        plt.plot(B, line)
+    else:
+        x1, x2 = xlimit
+        xx = x1 + np.arange(nx) * (x2 - x1) / nx
+        plt.plot(xx, B, line)
 
     plt.title(caption)
     plt.autoscale(enable=True, axis='x', tight=True)
@@ -63,59 +52,39 @@ def graphB(B, figname='graphB', caption='', ulimit=(), xpars=(), sxy=(1, .3), li
         plt.ylim(ulimit)
     plt.grid(True)
 
-    fig = plt.gca()
-    if nobox:
-        fig.xaxis.set_visible(False)
-
     plt_end(pause)
 
 
 def plotAAB(AA, figname='plotAAB', capA='', capB='', cmap='gray', line='#1f77b4',
-            ulimit=(), roi=(), sxy=(1, 1), aby=(3, 1), pause=0.):
-    """
-    xypars = (x0, y0, dx, dy); () no axes;
-    sxy = (sx, sy): stretch figure from default size
-    aby = (ay, by): relative y-size of AA and B
-    """
+            ulimit=(), roi=(), sxy=(1, 1), pause=1):
+
+    ay = 3
 
     ''' plotAA '''
     ny, nx = np.shape(AA)
     sx, sy = sxy
-    ay, by = aby
-    figxy = (nx * sx / dpi, ny * sy * ((ay + by) / ay) / dpi)
+    figx = figx0 * sx
+    figya = figx * (ny / nx) * sy
+    figyb = figya / ay
+    figxy = (figx, figya + figyb)
 
     if ulimit:
         AA = np.clip(AA, ulimit[0], ulimit[1])
 
-    # nobox = (len(xypars) == 0)
-    # if nobox:
-    #     xypars = (0, 0, 1, 1)
-    # x0, y0, dx, dy = xypars
-    # extent = (x0, x0 + dx*nx, y0 + dy*ny, y0)
-    # xx = x0 + np.arange(nx) * dx
-
-    plt.figure(figname, figsize=figxy, dpi=dpi, tight_layout=True)
+    plt.figure(figname, figsize=figxy, tight_layout=True)
     plt.clf()
-    plt.subplot2grid((ay + by, 1), (0, 0), rowspan=ay)
-    # plt.imshow(AA, cmap=cmap, aspect='auto', extent=extent)
+    plt.subplot2grid((ay + 1, 1), (0, 0), rowspan=ay)
     plt.imshow(AA, cmap=cmap, aspect='auto')
     plt.title(capA)
 
-    # figa = plt.gca()
-    # if nobox:
-    #     figa.axes.get_xaxis().set_visible(False)
-    #     figa.axes.get_yaxis().set_visible(False)
-
     """ graphB """
-    # x1, x2, y1, y2 = extent
     if len(roi) == 0:
         roi = (nx//2, ny//2, 10, 10)
     ix, iy, rx, ry = roi
-    # iy = int(ny * (iy - y1) / (y2 - y1))
     B = AA[iy, :]
     put_cursor(roi)
 
-    plt.subplot2grid((ay + by, 1), (ay, 0), rowspan=by)
+    plt.subplot2grid((ay + 1, 1), (ay, 0), rowspan=ay)
     plt.plot(B, line)
     plt.title(capB)
     plt.autoscale(enable=True, axis='x', tight=True)
@@ -123,21 +92,15 @@ def plotAAB(AA, figname='plotAAB', capA='', capB='', cmap='gray', line='#1f77b4'
         plt.ylim(ulimit)
     plt.grid(True)
 
-    # figb = plt.gca()
-    # if nobox:
-    #     figb.xaxis.set_visible(False)
-
     plt_end(pause)
 
 
 def put_cursor(roi):
+
     cline = 'yellow'
     croi = 'cyan'
     alpha = 0.75
 
-    # ax1, ax2, ay1, ay2 = extent
-    # if len(roi) == 0:
-    #     roi = ((ax1 + ax2)/2, (ay1 + ay2)/2, (ax2 - ax1)/100, (ay2 - ay1)/100)
     ix, iy, rx, ry = roi
 
     rx1 = ix - rx//2
@@ -151,87 +114,91 @@ def put_cursor(roi):
 
 
 def plt_end(pause):
+
     if pause:
         plt.pause(pause)
     else:
         plt.show()
 
 
-def graph_many(graphs, figname='graph_many', col_row=(1, 1), xpars=(0, 1), sxy=(1, 1), line='#1f77b4', pause=0.):
+def graph_many(graphs, figname='graph_many', col_row=(1, 1), sxy=(1, 1), line='#1f77b4', pause=1):
+
+    sy0 = 0.25
+
     ncol, nrow = col_row
     sx, sy = sxy
-    nx = len(graphs[0][0])
-    figxy = (ncol * nx * sx / dpi, nrow * nx * sx * sy /dpi)
-
-    nobox = (len(xpars) == 0)
-    if nobox:
-        xpars = (0, 1)
-    x0, dx = xpars
-    xx = x0 + np.arange(nx) * dx
+    figx = ncol * figx0 * sx
+    figy = nrow * figx0 * sy0 * sy
+    figxy = (figx, figy)
 
     plt.figure(figname, figsize=figxy, tight_layout=True)
     plt.clf()
 
     for graph in graphs:
-        uu, (irow, icol), caption, ylimit = graph
+        uu, (irow, icol), caption, xlimit, ylimit = graph
+        nx = len(uu)
 
         index = (irow - 0) * ncol + (icol + 1)
         plt.subplot(nrow, ncol, index)
-        # plt.plot(xx, uu, line)
-        plt.plot(uu, line)
+
+        if xlimit == ():
+            plt.plot(uu, line)
+            plt.gca().xaxis.set_visible(False)
+        else:
+            x1, x2 = xlimit
+            xx = x1 + np.arange(nx) * (x2 - x1) / nx
+            plt.plot(xx, uu, line)
         plt.autoscale(enable=True, axis='x', tight=True)
         if ylimit:
             plt.ylim(ylimit)
         plt.title(caption)
         plt.grid(True)
 
-        fig = plt.gca()
-        if nobox:
-            fig.xaxis.set_visible(False)
-
     plt_end(pause)
 
 
-def graph_many_0(graphs, figname='graph_many', col_row=(1, 1), xpars=(0, 1), sxy=(1, 1), line='#1f77b4', pause=0.):
-    ncol, nrow = col_row
-    sx, sy = sxy
-    nx = len(graphs[0][0])
-    figxy = (ncol * nx * sx / dpi, nrow * nx * sx * sy /dpi)
-
-    nobox = (len(xpars) == 0)
-    if nobox:
-        xpars = (0, 1)
-    x0, dx = xpars
-    xx = x0 + np.arange(nx) * dx
-
-    plt.figure(figname, figsize=figxy, tight_layout=True)
-    plt.clf()
-
-    for graph in graphs:
-        uu, (irow, icol), caption, ylimit = graph
-
-        index = (irow - 0) * ncol + (icol + 1)
-        plt.subplot(nrow, ncol, index)
-        plt.plot(xx, uu, line)
-        plt.autoscale(enable=True, axis='x', tight=True)
-        if ylimit:
-            plt.ylim(ylimit)
-        plt.title(caption)
-        plt.grid(True)
-
-        fig = plt.gca()
-        if nobox:
-            fig.xaxis.set_visible(False)
-
-    plt_end(pause)
+# def graph_many_0(graphs, figname='graph_many', col_row=(1, 1), xpars=(0, 1), sxy=(1, 1), line='#1f77b4', pause=1):
+#     ncol, nrow = col_row
+#     sx, sy = sxy
+#     nx = len(graphs[0][0])
+#     figxy = (ncol * nx * sx / dpi, nrow * nx * sx * sy /dpi)
+#
+#     nobox = (len(xpars) == 0)
+#     if nobox:
+#         xpars = (0, 1)
+#     x0, dx = xpars
+#     xx = x0 + np.arange(nx) * dx
+#
+#     plt.figure(figname, figsize=figxy, tight_layout=True)
+#     plt.clf()
+#
+#     for graph in graphs:
+#         uu, (irow, icol), caption, ylimit = graph
+#
+#         index = (irow - 0) * ncol + (icol + 1)
+#         plt.subplot(nrow, ncol, index)
+#         plt.plot(xx, uu, line)
+#         plt.autoscale(enable=True, axis='x', tight=True)
+#         if ylimit:
+#             plt.ylim(ylimit)
+#         plt.title(caption)
+#         plt.grid(True)
+#
+#         fig = plt.gca()
+#         if nobox:
+#             fig.xaxis.set_visible(False)
+#
+#     plt_end(pause)
 
 
 def mayaviAA(AA, figname='mayaviAAx', caption='', view=(70, 20), ulimit=(), sxy=(1, 1), cmap='jet'):
     import mayavi.mlab as ml
 
+    figx0, figy0 = (700, 500)
+
     el, az = view
     sx, sy = sxy
-    figxy = (700 * sx, 500 * sy)
+    figxy = (figx0 * sx, figy0 * sy)
 
     if ulimit:
         AA = np.clip(AA, ulimit[0], ulimit[1])
@@ -246,26 +213,28 @@ def mayaviAA(AA, figname='mayaviAAx', caption='', view=(70, 20), ulimit=(), sxy=
 
 if __name__ == '__main__':
     pi2 = 2 * np.pi
-    nx, ny = (1500, 1000)
+    nx, ny = (1920, 1080)
     xx, yy = np.meshgrid(np.arange(nx), np.arange(ny))
     kk = pi2 / 500
+    roi = (300, 375, 100, 100)
 
-    aa = 10 * np.sin(kk * xx) * np.sin(kk * yy) + 5 * (np.random.rand(1000, 1500) - .5)
-    b = aa[125, :]
+    aa = 10 * np.sin(kk * xx) * np.sin(kk * yy) + 5 * (np.random.rand(ny, nx) - .5)
+    b = aa[roi[1], :]
 
     graphs = []
-    graphs += [(aa[0, :], (0, 0), 'aa[0, :], (0, 0)', ())]
-    graphs += [(aa[1, :], (1, 0), 'aa[1, :], (1, 0)', ())]
-    graphs += [(aa[2, :], (2, 0), 'aa[2, :], (2, 0)', ())]
-    graphs += [(aa[3, :], (1, 1), 'aa[3, :], (1, 1)', ())]
-    graphs += [(aa[4, :], (2, 2), 'aa[4, :], (2, 2)', ())]
-    graphs += [(aa[5, :], (4, 2), 'aa[5, :], (4, 2)', ())]
+    graphs += [(aa[0, :], (0, 0), 'aa[0, :], (0, 0)', (), ())]
+    graphs += [(aa[1, :], (1, 0), 'aa[1, :], (1, 0)', (), ())]
+    graphs += [(aa[2, :], (2, 0), 'aa[2, :], (2, 0)', (), ())]
+    graphs += [(aa[3, :], (1, 1), 'aa[3, :], (1, 1)', (), ())]
+    graphs += [(aa[4, :], (2, 2), 'aa[4, :], (2, 2)', (), ())]
+    graphs += [(aa[5, :], (4, 2), 'aa[5, :], (4, 2)', (0, nx), ())]
 
-    # plotAA(aa, figname='fig1', caption='AA', sxy=(.5, .5), cmap='jet', pause=1)
-    # graphB(b, caption='B', xpars=(-100, .5), sxy=(.5, .5), pause=1)
-    plotAAB(aa, ulimit=(), roi=(300, 375, 100, 100), sxy=(.5, .5), capA='AA', capB='B', pause=1)
-    # graph_many(graphs, col_row=(3, 5), sxy=(.3, .3), xpars=(), pause=1)
+    plotAA(aa, pause=1)
+    graphB(b, pause=1)
+    plotAAB(aa, roi=roi, pause=1)
+    graph_many(graphs, col_row=(3, 5), sxy=(.75, .75), pause=1)
+    mayaviAA(aa)
 
-    mayaviAA(aa, caption='asdfdsaadfadfasdfasdf123')
+    plt.show()
 
 
