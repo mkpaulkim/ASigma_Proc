@@ -82,7 +82,7 @@ class ParamEntry:
 
     def get_list_val(self, typ=int):
         aa = self.entry.get()
-        bb = aa.split()
+        bb = aa.split(',')
         cc = [typ(b) for b in bb]
         return cc
 

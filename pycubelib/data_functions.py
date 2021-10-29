@@ -52,7 +52,20 @@ def stitch(zz12n_in, zz1n, lam12, lam1n):
     return zz12n_out
 
 
-def calib_lam1n(zz12n_in, zz1n, lam12, lam1n, roi):
+def calib_lam1n(zz12n, zz1n, lam1n, roi):
+    nbin = 100
+    ix, iy, rx, ry = roi
+    dzz = np.mod(zz12n - zz1n + lam1n/2, lam1n) - lam1n/2
+    dlam = lam1n / nbin
+    histo, uu = np.histogram(dzz, bins=nbin, range=(-lam1n/2, lam1n/2))
+    # pf.graphB(histo, figname='histogram', caption='histogram', xpars=(-lam1n/2, dlam), sxy=(5., .3), line='-+', pause=1)
+    # pf.graphB(dzz[iy, :], figname='dZZ', caption='dZZ', sxy=(5, .3), pause=1)
+    graphs = [(dzz[iy, :], (0, 0), 'dZZ', ()),
+              (histo, (0, 1), 'histogram', ())]
+    pf.graph_many(graphs, 'calibration', col_row=(1, 2), sxy=(.35, .3), pause=1)
+
+
+def calib_lam1n_0(zz12n_in, zz1n, lam12, lam1n, roi):
     nbin = 100
     dlam = lam12 / nbin
     ix, iy, rx, ry = roi
