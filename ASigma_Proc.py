@@ -35,7 +35,7 @@ btn_detail = fp.CmdButton(tkw, (450, 250, 5), 'detail')
 prog_n = fp.ProgressBar(tkw, (100, 300, 410), '')
 ent_roi = fp.ParamEntry(tkw, (700, 50, 25), '1000, 500, 10, 10', 'roi')
 ent_z0 = fp.ParamEntry(tkw, (700, 100, 15), 0.0, 'Z0_roi')
-# ent_sxy = fp.ParamEntry(tkw, (700, 150, 15), '.35, .35', 'sxy')
+ent_mnf = fp.ParamEntry(tkw, (700, 150, 15), '3, 1', 'mnf')
 
 btn_adios = fp.CmdButton(tkw, (700, 300, 10), 'adios', 'indian red')
 
@@ -46,7 +46,6 @@ def program_loop():
 
     roi = tuple(ent_roi.get_list_val())
     z0_roi = ent_z0.get_val(float)
-    # sxy = tuple(ent_sxy.get_list_val(float))
 
     tkw.after(tloop, program_loop)
 
@@ -156,6 +155,11 @@ def make_zz():
             pf.graph_many(graphs, 'stitch', gxy, sxy=(1, .75))
 
     if n >= 2:
+        mf, nf = tuple(ent_mnf.get_list_val())
+        zz_proc = zz_12ns[n].copy()
+        for i in range(nf):
+            pass
+            # zz_proc = np.med
         _, noise = gf.roi_measure(zz_12ns[n], roi)
 
         pf.plotAAB(zz_12ns[n], figname='ZZ12n', capA=f'ZZ_12{n}', roi=roi, sxy=sxy,
