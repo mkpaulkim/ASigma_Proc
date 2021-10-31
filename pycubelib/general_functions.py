@@ -52,7 +52,7 @@ def prn_list(aname, alist, m=3):
     return outstring
 
 
-def renormalize(aa, aminmax=(), bminmax=(), type=float):
+def renormalize_x(aa, aminmax=(), bminmax=(), type=float):
     if len(aminmax) == 0:
         aminmax = (np.min(aa), np.max(aa))
     amin, amax = aminmax

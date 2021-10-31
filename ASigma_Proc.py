@@ -32,10 +32,11 @@ btn_nextn = fp.CmdButton(tkw, (100, 200, 10), 'next n', 'orange')
 btn_makezz = fp.CmdButton(tkw, (100, 250, 10), 'make ZZ_n', 'orange')
 ent_lam1n = fp.ParamEntry(tkw, (300, 250, 15), 0, 'lam_1n')
 btn_detail = fp.CmdButton(tkw, (450, 250, 5), 'detail')
-prog_n = fp.ProgressBar(tkw, (100, 300, 410), '')
-ent_roi = fp.ParamEntry(tkw, (700, 50, 25), '1000, 500, 10, 10', 'roi')
-ent_z0 = fp.ParamEntry(tkw, (700, 100, 15), 0.0, 'Z0_roi')
+prog_n = fp.ProgressBar(tkw, (100, 310, 410), '')
+ent_roi = fp.ParamEntry(tkw, (700, 50, 25), '1200, 900, 10, 10', 'roi')
+ent_z0 = fp.ParamEntry(tkw, (700, 100, 15), 800.0, 'Z0_roi')
 ent_mnf = fp.ParamEntry(tkw, (700, 150, 15), '3, 1', 'mnf')
+btn_mayavi = fp.CmdButton(tkw, (700, 250, 10), 'mayavi',  'orange')
 
 btn_adios = fp.CmdButton(tkw, (700, 300, 10), 'adios', 'indian red')
 
@@ -66,6 +67,11 @@ def read_txt():
     print(f'>> txt_path = {txt_path} \n{text}')
     ent_nw.set_entry(nw)
     ent_n.set_entry(0)
+
+    if len(wln) < nw + 1:
+        print(f'> !!! len(wln) = {len(wln)} < nw + 1 = {nw + 1}')
+        wln = [0.0] + wln
+        print(f'> new wln: {gf.prn_list("wln", wln)}')
 
 
 def read_phs():
@@ -107,7 +113,8 @@ def get_lam1ns():
     print(gf.prn_list('lam_1ns', lam_1ns, 1))
     ent_n.set_entry(0)
     prog_n.setval(0)
-    pf.plt.close('plotAAB')
+    # pf.plt.close('plotAAB')
+    pf.plotAAB(hhh[0], capA=gf.path_parts(ent_txtpath.get_val(str))[0], roi=roi, sxy=sxy)
 
 
 def nextn():
@@ -155,15 +162,20 @@ def make_zz():
             pf.graph_many(graphs, 'stitch', gxy, sxy=(1, .75))
 
     if n >= 2:
-        mf, nf = tuple(ent_mnf.get_list_val())
-        zz_proc = zz_12ns[n].copy()
-        for i in range(nf):
-            pass
-            # zz_proc = np.med
+        mnf = tuple(ent_mnf.get_list_val())
+        zz_12ns[n] = df.cyclic_medfilter(zz_12ns[n], mnf, lam12)
+
         _, noise = gf.roi_measure(zz_12ns[n], roi)
 
         pf.plotAAB(zz_12ns[n], figname='ZZ12n', capA=f'ZZ_12{n}', roi=roi, sxy=sxy,
                    capB=f'lam12 = {lam_1ns[2]:.1f}; lam1{n} = {lam_1ns[n]:.1f}; noise = {noise:.1f}')
+
+
+def mayavi():
+    # pf.plt.close('all')
+    n = ent_n.get_val()
+    cap = gf.path_parts(ent_txtpath.get_val(str))[0] + f': ZZ_12{n}'
+    pf.mayaviAA(zz_12ns[n], caption=cap)
 
 
 def adios():
@@ -179,7 +191,10 @@ btn_nextn.command(nextn)
 btn_makezz.command(make_zz)
 btn_inv.command(btn_inv.switch)
 btn_detail.command(btn_detail.switch)
+btn_mayavi.command(mayavi)
 btn_adios.command(adios)
+
+btn_inv.on()
 
 tloop = 10
 tkw.after(tloop, program_loop)

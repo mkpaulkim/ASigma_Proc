@@ -107,13 +107,19 @@ def stitch(zz12n_in, zz1n, lam12, lam1n, roi):
 #     return lam1n
 
 
-# def stitch_x(zz12n_in, zz1n, lam12, lam1n):
-#     yy = np.round(zz12n_in / lam1n) * lam1n
-#     zz = np.mod(yy + zz1n + lam12/2, lam12) - lam12/2
-#     dzz = np.mod(zz - zz12n_in + lam12/2, lam12) - lam12/2
-#     ezz = (np.abs(dzz) > (0.5 * lam1n)) * lam1n * np.sign(dzz)
-#     zz12n_out = np.mod(zz - ezz + lam12/2, lam12) - lam12/2
-#     return zz12n_out
+def cyclic_medfilter(zz, mnf, lamz):
+    import scipy.signal as sig
+
+    mf, nf = mnf
+    uu = zz * pi2 / lamz
+    cc = np.cos(uu)
+    ss = np.sin(uu)
+    for n in range(nf):
+        cc = sig.medfilt2d(cc, mf)
+        ss = sig.medfilt2d(ss, mf)
+    zz_out = np.arctan2(ss, cc) * lamz / pi2
+
+    return zz_out
 
 
 if __name__ == '__main__':
