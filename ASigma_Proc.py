@@ -17,6 +17,7 @@ lam_1ns = []
 zz_ns = []
 zz_1ns = []
 zz_12ns = []
+noise = []
 
 tkw = fp.tkwindow('AlphaSigmaProc', (20, 50, 1000, 350), tkbg='gray90')
 
@@ -33,12 +34,13 @@ btn_makezz = fp.CmdButton(tkw, (100, 250, 10), 'make ZZ_n', 'orange')
 ent_lam1n = fp.ParamEntry(tkw, (300, 250, 15), 0, 'lam_1n')
 btn_detail = fp.CmdButton(tkw, (450, 250, 5), 'detail')
 prog_n = fp.ProgressBar(tkw, (100, 310, 410), '')
-ent_roi = fp.ParamEntry(tkw, (700, 50, 25), '1200, 900, 10, 10', 'roi')
-ent_z0 = fp.ParamEntry(tkw, (700, 100, 15), 800.0, 'Z0_roi')
-ent_mnf = fp.ParamEntry(tkw, (700, 150, 15), '3, 1', 'mnf')
-btn_mayavi = fp.CmdButton(tkw, (700, 250, 10), 'mayavi',  'orange')
+ent_roi = fp.ParamEntry(tkw, (600, 50, 25), '1200, 900, 10, 10', 'roi')
+ent_z0 = fp.ParamEntry(tkw, (600, 100, 15), 800.0, 'Z0_roi')
+ent_mnf = fp.ParamEntry(tkw, (600, 150, 15), '3, 1', 'mnf')
+btn_mayavi = fp.CmdButton(tkw, (600, 250, 10), 'mayavi',  'orange')
+btn_graphall = fp.CmdButton(tkw, (800, 250, 10), 'graph all', 'orange')
 
-btn_adios = fp.CmdButton(tkw, (700, 300, 10), 'adios', 'indian red')
+btn_adios = fp.CmdButton(tkw, (800, 300, 10), 'adios', 'indian red')
 
 
 def program_loop():
@@ -97,7 +99,7 @@ def read_phs():
 
 
 def get_lam1ns():
-    global lam_1ns, zz_ns, zz_1ns, zz_12ns
+    global lam_1ns, zz_ns, zz_1ns, zz_12ns, noise
     nx, ny, dx, nw = nxydw
 
     lam_1ns = [0, 0]
@@ -109,16 +111,19 @@ def get_lam1ns():
     zz_ns = [blank] * (nw+1)
     zz_1ns = [blank] * (nw+1)
     zz_12ns = [blank] * (nw+1)
+    noise = [0] * (nw + 1)
 
     print(gf.prn_list('lam_1ns', lam_1ns, 1))
     ent_n.set_entry(0)
     prog_n.setval(0)
     # pf.plt.close('plotAAB')
-    pf.plotAAB(hhh[0], capA=gf.path_parts(ent_txtpath.get_val(str))[0], roi=roi, sxy=sxy)
+    capA = gf.path_parts(ent_txtpath.get_val(str))[0].replace('.txt', '_aa.png')
+    pf.plotAAB(hhh[0], capA=capA, roi=roi, sxy=sxy)
 
 
 def nextn():
     nx, ny, dx, nw = nxydw
+
     n = np.mod(ent_n.get_val() + 1, nw+1)
     ent_n.set_entry(n)
     prog_n.setval(100 * n / nw)
@@ -127,7 +132,7 @@ def nextn():
 
 
 def make_zz():
-    global zz_ns, zz_1ns, zz_12ns
+    global zz_ns, zz_1ns, zz_12ns, noise
 
     n = ent_n.get_val()
     sign = 1 - btn_inv.is_on() * 2
@@ -165,10 +170,10 @@ def make_zz():
         mnf = tuple(ent_mnf.get_list_val())
         zz_12ns[n] = df.cyclic_medfilter(zz_12ns[n], mnf, lam12)
 
-        _, noise = gf.roi_measure(zz_12ns[n], roi)
+        _, noise[n] = gf.roi_measure(zz_12ns[n], roi)
 
         pf.plotAAB(zz_12ns[n], figname='ZZ12n', capA=f'ZZ_12{n}', roi=roi, sxy=sxy,
-                   capB=f'lam12 = {lam_1ns[2]:.1f}; lam1{n} = {lam_1ns[n]:.1f}; noise = {noise:.1f}')
+                   capB=f'lam12 = {lam_1ns[2]:.1f}; lam1{n} = {lam_1ns[n]:.1f}; noise = {noise[1]:.1f}')
 
 
 def mayavi():
@@ -176,6 +181,24 @@ def mayavi():
     n = ent_n.get_val()
     cap = gf.path_parts(ent_txtpath.get_val(str))[0] + f': ZZ_12{n}'
     pf.mayaviAA(zz_12ns[n], caption=cap)
+
+
+def graph_all():
+    nx, ny, dx, nw = nxydw
+
+    lam12 = lam_1ns[2]
+    graphs = []
+    ix, iy, rx, ry = roi
+    for n in range(1, nw + 1):
+        wl = wln[n]
+        graphs += [(zz_ns[n][iy, :], (n - 1, 0), f'ZZ{n}p: wl{n} = {wl:.8f}', (), (-wl/2, wl/2))]
+    for n in range(2, nw + 1):
+        lam_1n = lam_1ns[n]
+        graphs += [(zz_1ns[n][iy, :], (n - 1, 1), f'ZZ_1{n}: lam1{n} = {lam_1n:.1f}', (), (-lam_1n/2, lam_1n/2))]
+        graphs += [(zz_12ns[n][iy, :], (n - 1, 2),
+                    f'ZZ_12{n}: lam_1{n} = {lam_1ns[n]: .1f}, noise = {noise[n]:.1f}', (), (-lam12/2, lam12/2))]
+
+    pf.graph_many(graphs, col_row=(3, nw), sxy=(.75, 1), pause=1)
 
 
 def adios():
@@ -192,6 +215,7 @@ btn_makezz.command(make_zz)
 btn_inv.command(btn_inv.switch)
 btn_detail.command(btn_detail.switch)
 btn_mayavi.command(mayavi)
+btn_graphall.command(graph_all)
 btn_adios.command(adios)
 
 btn_inv.on()

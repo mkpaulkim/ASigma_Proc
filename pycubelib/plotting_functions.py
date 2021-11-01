@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import mayavi.mlab as ml
+# import mayavi.mlab as ml
 
 figx0 = 6.5
 font0 = 'Consolas 10'
