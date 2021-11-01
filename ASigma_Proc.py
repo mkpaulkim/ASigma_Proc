@@ -11,6 +11,8 @@ pi2limit = (-pi, pi)
 sxy = (1, 1)
 
 nxydw = (0, 0, 0, 0)
+# roi = (0, 0, 0, 0)
+# z0_roi = 0.0
 wln = []
 hhh = []
 lam_1ns = []
@@ -19,33 +21,35 @@ zz_1ns = []
 zz_12ns = []
 noise = []
 
-tkw = fp.tkwindow('AlphaSigmaProc', (20, 50, 1000, 350), tkbg='gray90')
+tkw = fp.tkwindow('AlphaSigmaProc', (20, 50, 1050, 350), tkbg='gray90')
 
 btn_readtxt = fp.CmdButton(tkw, (100, 50, 10), 'read TXT', 'orange')
 ent_txtpath = fp.ParamEntry(tkw, (220, 55, 35), '', '')
 btn_readphs = fp.CmdButton(tkw, (100, 100, 10), 'read HHp', 'orange')
 ent_phspath = fp.ParamEntry(tkw, (220, 105, 35), '', '')
 btn_lam1ns = fp.CmdButton(tkw, (100, 150, 10), 'get lam_1ns', 'orange')
+btn_nextn = fp.CmdButton(tkw, (100, 200, 10), 'next n', 'orange')
 ent_n = fp.ParamEntry(tkw, (250, 205, 5), 0, 'n')
 ent_nw = fp.ParamEntry(tkw, (350, 205, 5), 0, 'nw', 'r')
 btn_inv = fp.CmdButton(tkw, (450, 200, 5), 'inv')
-btn_nextn = fp.CmdButton(tkw, (100, 200, 10), 'next n', 'orange')
 btn_makezz = fp.CmdButton(tkw, (100, 250, 10), 'make ZZ_n', 'orange')
 ent_lam1n = fp.ParamEntry(tkw, (300, 250, 15), 0, 'lam_1n')
 btn_detail = fp.CmdButton(tkw, (450, 250, 5), 'detail')
 prog_n = fp.ProgressBar(tkw, (100, 310, 410), '')
-ent_roi = fp.ParamEntry(tkw, (600, 50, 25), '1200, 900, 10, 10', 'roi')
+ent_roi = fp.ParamEntry(tkw, (600, 50, 25), '1200, 900, 10, 10', 'ixy rxy')
 ent_z0 = fp.ParamEntry(tkw, (600, 100, 15), 800.0, 'Z0_roi')
-ent_mnf = fp.ParamEntry(tkw, (600, 150, 15), '3, 1', 'mnf')
-btn_mayavi = fp.CmdButton(tkw, (600, 250, 10), 'mayavi',  'orange')
-btn_graphall = fp.CmdButton(tkw, (800, 250, 10), 'graph all', 'orange')
+ent_qxy = fp.ParamEntry(tkw, (600, 200, 25), '0, 0, 0, 0', 'qxysz')
+ent_mnf = fp.ParamEntry(tkw, (600, 250, 15), '3, 1', 'mnf')
+btn_diffract = fp.CmdButton(tkw, (850, 200, 10), 'diffract')
+btn_graphall = fp.CmdButton(tkw, (850, 250, 10), 'graph all', 'orange')
+btn_mayavi = fp.CmdButton(tkw, (850, 300, 10), 'mayavi',  'orange')
 
-btn_adios = fp.CmdButton(tkw, (800, 300, 10), 'adios', 'indian red')
+btn_adios = fp.CmdButton(tkw, (850, 50, 10), 'adios', 'indian red')
 
 
 def program_loop():
     global roi, z0_roi
-    nx, ny, dx, nw = nxydw
+    # nx, ny, dx, nw = nxydw
 
     roi = tuple(ent_roi.get_list_val())
     z0_roi = ent_z0.get_val(float)
@@ -138,19 +142,33 @@ def make_zz():
     sign = 1 - btn_inv.is_on() * 2
     lam1n = lam_1ns[n] = ent_lam1n.get_val(float)
     lam12 = lam_1ns[2]
+    hha = hhh[0].copy()
+    hhp = hhh[n].copy()
 
     if n >= 1:
-        zz_ns[n] = sign * hhh[n] * wln[n] / pi2
+        # if btn_diffract.is_on():
+        #     qxysz = tuple(ent_qxy.get_list_val(float))
+        #     hhp, hha = df.diffract(hhh[n], hha, wln[n], nxydw, qxysz)
+
+        # zz_ns[n] = sign * hhp * wln[n] / pi2
+        zz_ns[n] = sign * hhp * wln[n] / pi2
 
         pf.plotAAB(zz_ns[n], figname='ZZn', capA=f'ZZ_{n}', capB=f'lam_{n} = {wln[n]:.8f}', roi=roi, sxy=sxy)
 
     if n >= 2:
-        ep1n = np.mod(sign * (hhh[1] - hhh[n]) + pi, pi2) - pi
-        zz1n_ = ep1n * lam1n / pi2
+        zz1n = (np.mod((zz_ns[1] * pi2 / wln[1] - zz_ns[n] * pi2 / wln[n]) + pi, pi2) - pi) * lam1n / pi2
 
-        z_roi, _ = gf.roi_cyclic_measure(zz1n_, roi, lam1n)
-        zz_1ns[n] = np.mod(zz1n_ - z_roi + z0_roi + lam1n/2, lam1n) - lam1n/2
+        z_roi, _ = gf.roi_cyclic_measure(zz1n, roi, lam1n)
+        zz_1ns[n] = np.mod(zz1n - z_roi + z0_roi + lam1n/2, lam1n) - lam1n/2
 
+        # ep1n = np.mod(sign * (hhh[1] - hhh[n]) + pi, pi2) - pi
+        # zz1n_ = ep1n * lam1n / pi2
+        #
+        # z_roi, _ = gf.roi_cyclic_measure(zz1n_, roi, lam1n)
+        # zz_1ns[n] = np.mod(zz1n_ - z_roi + z0_roi + lam1n/2, lam1n) - lam1n/2
+
+        # print(f'< 33333333333')
+        # gf.what_is('zz_1ns', zz_1ns[n])
         pf.plotAAB(zz_1ns[n], figname='ZZ1n', capA=f'ZZ_1{n}',
                    capB=f'lam_1{n} = {lam_1ns[n]:.1f}', roi=roi, sxy=sxy)
 
@@ -167,13 +185,20 @@ def make_zz():
             pf.graph_many(graphs, 'stitch', gxy, sxy=(1, .75))
 
     if n >= 2:
+        if btn_diffract.is_on():
+            qxysz = tuple(ent_qxy.get_list_val(float))
+            hhp, _ = df.diffract(zz_12ns[n]*pi2/lam12, hha, wln[1], nxydw, qxysz)
+            zz_12ns[n] = hhp * lam12 / pi2
+
         mnf = tuple(ent_mnf.get_list_val())
         zz_12ns[n] = df.cyclic_medfilter(zz_12ns[n], mnf, lam12)
 
         _, noise[n] = gf.roi_measure(zz_12ns[n], roi)
-
+        # print(f'< 1111111111')
+        # gf.what_is('zz_12n', zz_12ns[n])
         pf.plotAAB(zz_12ns[n], figname='ZZ12n', capA=f'ZZ_12{n}', roi=roi, sxy=sxy,
-                   capB=f'lam12 = {lam_1ns[2]:.1f}; lam1{n} = {lam_1ns[n]:.1f}; noise = {noise[1]:.1f}')
+                   capB=f'lam12 = {lam_1ns[2]:.1f}; lam1{n} = {lam_1ns[n]:.1f}; noise = {noise[n]:.1f}')
+        # print(f'< 22222222222')
 
 
 def mayavi():
@@ -214,8 +239,9 @@ btn_nextn.command(nextn)
 btn_makezz.command(make_zz)
 btn_inv.command(btn_inv.switch)
 btn_detail.command(btn_detail.switch)
-btn_mayavi.command(mayavi)
+btn_diffract.command(btn_diffract.switch)
 btn_graphall.command(graph_all)
+btn_mayavi.command(mayavi)
 btn_adios.command(adios)
 
 btn_inv.on()
