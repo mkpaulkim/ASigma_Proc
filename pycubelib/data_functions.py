@@ -65,14 +65,35 @@ def stitch(zz12n_in, zz1n, lam12, lam1n, roi):
     return zz12n_out, graphs, gxy
 
 
-def diffract(hhp, hha, wl, nxydw, qxysz):
+# def diffract_x(hhp, hha, wl, nxydw, qxysz):
+#     nx, ny, dx, nw = nxydw
+#     qx, qy, qs, zh = qxysz
+#     kk = pi2 / wl
+#     ax, ay = (nx * dx, ny * dx)
+#     x = np.linspace(-ax/2, ax/2 - dx, nx)
+#     y = np.linspace(-ay/2, ay/2 - dx, ny)
+#     xx, yy = np.meshgrid(x, y)
+#     ak = pi2 / dx
+#     dkx, dky = (pi2 / ax, pi2 / ay)
+#     kx = np.linspace(-ak/2, ak/2 - dkx, nx)
+#     ky = np.linspace(-ak/2, ak/2 - dky, ny)
+#     kxx, kyy = np.meshgrid(kx, ky)
+#
+#     hh = hha * np.exp(1j * hhp)
+#     ggq = np.exp(1j * kk * (xx * np.sin(qx) + yy * np.sin(qy) + (xx**2 + yy**2) * (qs / 2)))
+#     ggk = np.exp(1j * zh * np.sqrt(kk**2 - kxx**2 - kyy*2))
+#     ff = np.fft.fftshift(np.fft.fft2(hh * ggq))
+#     hh_out = np.fft.ifft2(np.fft.ifftshift(ff * ggk))
+#     hhp_out = np.angle(hh_out)
+#     hha_out = np.abs(hh_out)
+#
+#     return hhp_out, hha_out
+
+
+def diffract(hhp, hha, wl, nxydw, zh):
     nx, ny, dx, nw = nxydw
-    qx, qy, qs, zh = qxysz
     kk = pi2 / wl
     ax, ay = (nx * dx, ny * dx)
-    x = np.linspace(-ax/2, ax/2 - dx, nx)
-    y = np.linspace(-ay/2, ay/2 - dx, ny)
-    xx, yy = np.meshgrid(x, y)
     ak = pi2 / dx
     dkx, dky = (pi2 / ax, pi2 / ay)
     kx = np.linspace(-ak/2, ak/2 - dkx, nx)
@@ -80,14 +101,25 @@ def diffract(hhp, hha, wl, nxydw, qxysz):
     kxx, kyy = np.meshgrid(kx, ky)
 
     hh = hha * np.exp(1j * hhp)
-    ggq = np.exp(1j * kk * (xx * np.sin(qx) + yy * np.sin(qy) + (xx**2 + yy**2) * (qs / 2)))
     ggk = np.exp(1j * zh * np.sqrt(kk**2 - kxx**2 - kyy*2))
-    ff = np.fft.fftshift(np.fft.fft2(hh * ggq))
+    ff = np.fft.fftshift(np.fft.fft2(hh))
     hh_out = np.fft.ifft2(np.fft.ifftshift(ff * ggk))
     hhp_out = np.angle(hh_out)
     hha_out = np.abs(hh_out)
 
     return hhp_out, hha_out
+
+
+def zz_tilt(zz, nxydw, qxys, zlam):
+    nx, ny, dx, nw = nxydw
+    qx, qy, qs = qxys
+    ax, ay = (nx * dx, ny * dx)
+    x = np.linspace(-ax/2, ax/2 - dx, nx)
+    y = np.linspace(-ay/2, ay/2 - dx, ny)
+    xx, yy = np.meshgrid(x, y)
+    zzq = (xx * np.sin(qx) + yy * np.sin(qy) + (xx**2 + yy**2) * (qs / 2))
+    zz_out = np.mod(zz + zzq + zlam/2, zlam) - zlam/2
+    return zz_out
 
 
 # def calib_lam1n_0(zz12n_in, zz1n, lam12, lam1n, roi):

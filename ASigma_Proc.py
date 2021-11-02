@@ -19,9 +19,10 @@ lam_1ns = []
 zz_ns = []
 zz_1ns = []
 zz_12ns = []
+zz_proc = []
 noise = []
 
-tkw = fp.tkwindow('AlphaSigmaProc', (20, 50, 1050, 350), tkbg='gray90')
+tkw = fp.tkwindow('AlphaSigmaProc', (20, 50, 1050, 400), tkbg='gray90')
 
 btn_readtxt = fp.CmdButton(tkw, (100, 50, 10), 'read TXT', 'orange')
 ent_txtpath = fp.ParamEntry(tkw, (220, 55, 35), '', '')
@@ -38,9 +39,11 @@ btn_detail = fp.CmdButton(tkw, (450, 250, 5), 'detail')
 prog_n = fp.ProgressBar(tkw, (100, 310, 410), '')
 ent_roi = fp.ParamEntry(tkw, (600, 50, 25), '1200, 900, 10, 10', 'ixy rxy')
 ent_z0 = fp.ParamEntry(tkw, (600, 100, 15), 800.0, 'Z0_roi')
-ent_qxy = fp.ParamEntry(tkw, (600, 200, 25), '0, 0, 0, 0', 'qxysz')
+ent_zh = fp.ParamEntry(tkw, (600, 150, 15), 0.0, 'Zh')
+ent_qxy = fp.ParamEntry(tkw, (600, 200, 25), '-0.3, 0, -3e-5', 'qxys')
 ent_mnf = fp.ParamEntry(tkw, (600, 250, 15), '3, 1', 'mnf')
-btn_diffract = fp.CmdButton(tkw, (850, 200, 10), 'diffract')
+btn_diffract = fp.CmdButton(tkw, (850, 150, 10), 'diffract')
+btn_tilt = fp.CmdButton(tkw, (850, 200, 10), 'tilt', 'orange')
 btn_graphall = fp.CmdButton(tkw, (850, 250, 10), 'graph all', 'orange')
 btn_mayavi = fp.CmdButton(tkw, (850, 300, 10), 'mayavi',  'orange')
 
@@ -136,7 +139,7 @@ def nextn():
 
 
 def make_zz():
-    global zz_ns, zz_1ns, zz_12ns, noise
+    global zz_ns, zz_1ns, zz_12ns, zz_proc, noise
 
     n = ent_n.get_val()
     sign = 1 - btn_inv.is_on() * 2
@@ -146,11 +149,9 @@ def make_zz():
     hhp = hhh[n].copy()
 
     if n >= 1:
-        # if btn_diffract.is_on():
-        #     qxysz = tuple(ent_qxy.get_list_val(float))
-        #     hhp, hha = df.diffract(hhh[n], hha, wln[n], nxydw, qxysz)
-
-        # zz_ns[n] = sign * hhp * wln[n] / pi2
+        if btn_diffract.is_on():
+            zh = tuple(ent_zh.get_list_val(float))
+            hhp, hha = df.diffract(hhh[n], hha, wln[n], nxydw, zh)
         zz_ns[n] = sign * hhp * wln[n] / pi2
 
         pf.plotAAB(zz_ns[n], figname='ZZn', capA=f'ZZ_{n}', capB=f'lam_{n} = {wln[n]:.8f}', roi=roi, sxy=sxy)
@@ -185,13 +186,14 @@ def make_zz():
             pf.graph_many(graphs, 'stitch', gxy, sxy=(1, .75))
 
     if n >= 2:
-        if btn_diffract.is_on():
-            qxysz = tuple(ent_qxy.get_list_val(float))
-            hhp, _ = df.diffract(zz_12ns[n]*pi2/lam12, hha, wln[1], nxydw, qxysz)
-            zz_12ns[n] = hhp * lam12 / pi2
+        if btn_tilt.is_on():
+            qxys = tuple(ent_qxy.get_list_val(float))
+            zz_12ns[n] = df.zz_tilt(zz_12ns[n], nxydw, qxys, lam_1ns[2])
+            btn_tilt.off()
 
         mnf = tuple(ent_mnf.get_list_val())
         zz_12ns[n] = df.cyclic_medfilter(zz_12ns[n], mnf, lam12)
+        zz_proc = zz_12ns[n].copy()
 
         _, noise[n] = gf.roi_measure(zz_12ns[n], roi)
         # print(f'< 1111111111')
@@ -201,11 +203,24 @@ def make_zz():
         # print(f'< 22222222222')
 
 
+def make_zz_proc():
+    global zz_proc
+
+    n = ent_n.get_val()
+    qxys = tuple(ent_qxy.get_list_val(float))
+    lam12 = lam_1ns[2]
+    zz_proc = df.zz_tilt(zz_12ns[n], nxydw, qxys, lam12)
+    _, noise[n] = gf.roi_measure(zz_proc, roi)
+    pf.plotAAB(zz_proc, figname='ZZ12n', capA=f'ZZ_proc', roi=roi, sxy=sxy,
+               capB=f'lam12 = {lam_1ns[2]:.1f}; noise = {noise[n]:.1f}')
+
+
 def mayavi():
     # pf.plt.close('all')
     n = ent_n.get_val()
     cap = gf.path_parts(ent_txtpath.get_val(str))[0] + f': ZZ_12{n}'
-    pf.mayaviAA(zz_12ns[n], caption=cap)
+    # pf.mayaviAA(zz_12ns[n], caption=cap)
+    pf.mayaviAA(zz_proc, caption=cap)
 
 
 def graph_all():
@@ -222,8 +237,9 @@ def graph_all():
         graphs += [(zz_1ns[n][iy, :], (n - 1, 1), f'ZZ_1{n}: lam1{n} = {lam_1n:.1f}', (), (-lam_1n/2, lam_1n/2))]
         graphs += [(zz_12ns[n][iy, :], (n - 1, 2),
                     f'ZZ_12{n}: lam_1{n} = {lam_1ns[n]: .1f}, noise = {noise[n]:.1f}', (), (-lam12/2, lam12/2))]
+    graphs += [(zz_proc[iy, :], (0, 2), f'ZZ_proc', (), (-lam12/2, lam12/2))]
 
-    pf.graph_many(graphs, col_row=(3, nw), sxy=(.75, 1), pause=1)
+    pf.graph_many(graphs, col_row=(3, nw), sxy=(.75, .75), pause=1)
 
 
 def adios():
@@ -240,6 +256,7 @@ btn_makezz.command(make_zz)
 btn_inv.command(btn_inv.switch)
 btn_detail.command(btn_detail.switch)
 btn_diffract.command(btn_diffract.switch)
+btn_tilt.command(make_zz_proc)
 btn_graphall.command(graph_all)
 btn_mayavi.command(mayavi)
 btn_adios.command(adios)
