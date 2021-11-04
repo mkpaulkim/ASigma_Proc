@@ -1,7 +1,6 @@
 import tkinter as tk
 
 tkfont = 'Consolas 10'
-bg_r = 'gray85'
 
 
 def tkwindow(title, window=(20, 20, 500, 300), tkbg='gray85'):
@@ -9,7 +8,7 @@ def tkwindow(title, window=(20, 20, 500, 300), tkbg='gray85'):
     tkw.title(title)
     x0, y0, ax, ay = window
     tkw.geometry(f'{ax}x{ay}+{x0}+{y0}')
-    # tkw.iconbitmap('./pycubelib/hcube.ico')
+    # tkw.iconbitmap('hcube.ico')
     tkw.config(bg=tkbg)
     return tkw
 
@@ -45,17 +44,12 @@ class CmdButton:
 
 
 class ParamEntry:
-    def __init__(self, frame, xyw, val=0, label='entry', rw='w'):
+    def __init__(self, frame, xyw, val=0, label='entry'):
         x, y, w = xyw
         self.entry = tk.Entry(frame, font=tkfont, justify=tk.CENTER)
         self.entry['width'] = w
         self.entry.place(x=x, y=y)
         self.set_entry(val)
-        if rw == 'w':
-            bg = 'white'
-        else:
-            bg = bg_r
-        self.entry['bg'] = bg
         self.lbl = tk.Label(frame, text=label, bg=frame['bg'])
         self.lbl.place(x=x+w, y=y)
         frame.update_idletasks()
@@ -122,7 +116,7 @@ class TextBox:
 
 
 if __name__ == '__main__':
-    tkw = tkwindow(title='tkw')
+    tkw = tkwindow(title='fp')
 
     btn1 = CmdButton(tkw, xyw=(100, 50, 10))
     ent1 = ParamEntry(tkw, xyw=(100, 100, 30))

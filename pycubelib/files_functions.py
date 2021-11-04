@@ -23,7 +23,6 @@ def read_txt(txt_path=''):
                                               filetypes=[('TXT files', '*.txt *.TXT')])
     with open(txt_path) as f:
         text = f.read()
-
     return text, txt_path
 
 
@@ -36,14 +35,17 @@ def write_png(aa, png_path='', alimit=()):
         png_path = filedialog.asksaveasfilename(title='.PNG file name to write',
                                                 filetypes=[('PNG files', '*.png *.PNG')],
                                                 defaultextension='.png')
-    if alimit:
-        aa = df.renormalize(aa, alimit, u16limit, np.uint16)
-    else:
+    # if alimit:
+    #     aa = df.renormalize(aa, alimit, u16limit, np.uint16)
+    # else:
+    #     alimit = (np.min(aa), np.max(aa))
+    #     aa = aa.astype(np.uint16)
+
+    if alimit == ():
         alimit = (np.min(aa), np.max(aa))
-        aa = aa.astype(np.uint16)
+    aa = df.renormalize(aa, alimit, u16limit, np.uint16)
 
     cv2.imwrite(png_path, aa)
-
     return alimit, png_path
 
 
@@ -59,10 +61,10 @@ def read_png(png_path='', alimit=()):
     if alimit:
         aa = df.renormalize(aa, u16limit, alimit, type(alimit[0]))
     else:
-        alimit = (np.min(aa), np.max(aa))
-    nyx = np.shape(aa)
-
-    file_info = {'nys':nyx, 'alimit':alimit, 'png_path':png_path}
+        alimit = u16limit
+    ny, nx = np.shape(aa)
+    nxy = (nx, ny)
+    file_info = {'nxy': nxy, 'alimit': alimit, 'png_path': png_path}
     return aa, file_info
 
 

@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import mayavi.mlab as ml
+# import mayavi.mlab as ml
 
 figx0 = 6.5
 font0 = 'Consolas 10'
@@ -156,40 +156,6 @@ def graph_many(graphs, figname='graph_many', col_row=(1, 1), sxy=(1, 1), line='#
         plt.grid(True)
 
     plt_end(pause)
-
-
-# def graph_many_0(graphs, figname='graph_many', col_row=(1, 1), xpars=(0, 1), sxy=(1, 1), line='#1f77b4', pause=1):
-#     ncol, nrow = col_row
-#     sx, sy = sxy
-#     nx = len(graphs[0][0])
-#     figxy = (ncol * nx * sx / dpi, nrow * nx * sx * sy /dpi)
-#
-#     nobox = (len(xpars) == 0)
-#     if nobox:
-#         xpars = (0, 1)
-#     x0, dx = xpars
-#     xx = x0 + np.arange(nx) * dx
-#
-#     plt.figure(figname, figsize=figxy, tight_layout=True)
-#     plt.clf()
-#
-#     for graph in graphs:
-#         uu, (irow, icol), caption, ylimit = graph
-#
-#         index = (irow - 0) * ncol + (icol + 1)
-#         plt.subplot(nrow, ncol, index)
-#         plt.plot(xx, uu, line)
-#         plt.autoscale(enable=True, axis='x', tight=True)
-#         if ylimit:
-#             plt.ylim(ylimit)
-#         plt.title(caption)
-#         plt.grid(True)
-#
-#         fig = plt.gca()
-#         if nobox:
-#             fig.xaxis.set_visible(False)
-#
-#     plt_end(pause)
 
 
 def mayaviAA(AA, figname='mayaviAAx', caption='', view=(70, 20), ulimit=(), sxy=(1, 1), cmap='jet'):
