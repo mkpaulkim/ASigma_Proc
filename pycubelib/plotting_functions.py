@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-# import mayavi.mlab as ml
+import mayavi.mlab as ml
 
 figx0 = 6.5
 font0 = 'Consolas 10'
@@ -122,6 +122,25 @@ def plt_end(pause):
         plt.show()
 
 
+def mayaviAA(AA, figname='mayaviAA', caption='', view=(70, 20), ulimit=(), sxy=(1, 1), cmap='jet'):
+    # import mayavi.mlab as ml
+
+    figx0, figy0 = (700, 500)
+
+    el, az = view
+    sx, sy = sxy
+    figxy = (figx0 * sx, figy0 * sy)
+
+    if ulimit:
+        AA = np.clip(AA, ulimit[0], ulimit[1])
+    ml.figure(figname, size=figxy)
+    ml.clf()
+    ml.surf(AA, colormap=cmap, warp_scale='auto')
+    ml.text(.02, .02, caption, width=len(caption)*.015)
+    ml.view(elevation=el, azimuth=az)
+    ml.show(stop=True)
+
+
 def graph_many(graphs, figname='graph_many', col_row=(1, 1), sxy=(1, 1), line='#1f77b4', pause=1):
 
     sy0 = 0.25
@@ -156,25 +175,6 @@ def graph_many(graphs, figname='graph_many', col_row=(1, 1), sxy=(1, 1), line='#
         plt.grid(True)
 
     plt_end(pause)
-
-
-def mayaviAA(AA, figname='mayaviAAx', caption='', view=(70, 20), ulimit=(), sxy=(1, 1), cmap='jet'):
-    # import mayavi.mlab as ml
-
-    figx0, figy0 = (700, 500)
-
-    el, az = view
-    sx, sy = sxy
-    figxy = (figx0 * sx, figy0 * sy)
-
-    if ulimit:
-        AA = np.clip(AA, ulimit[0], ulimit[1])
-    ml.figure(figname, size=figxy)
-    ml.clf()
-    ml.surf(AA, colormap=cmap, warp_scale='auto')
-    ml.text(.02, .02, caption, width=len(caption)*.015)
-    ml.view(elevation=el, azimuth=az)
-    ml.show(stop=True)
 
 
 if __name__ == '__main__':

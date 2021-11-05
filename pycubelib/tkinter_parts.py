@@ -14,7 +14,7 @@ def tkwindow(title, window=(20, 20, 500, 300), tkbg='gray85'):
 
 
 class CmdButton:
-    def __init__(self, frame, xyw, text='button', color='gray90'):
+    def __init__(self, frame, xyw, text='button', color='orange'):
         x, y, w = xyw
         self.button = tk.Button(frame, text=text, bg=color, width=w, font=tkfont)
         self.button.place(x=x, y=y)
