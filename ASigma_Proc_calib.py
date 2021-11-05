@@ -16,12 +16,12 @@ txt_path = filedialog.askopenfilename(title='TXT file path', filetypes=[('txt fi
 # txt_path = '/media/mkpaulkim/Ultra Touch/{{UT White}}/Dropbox/[[ PROJECTS.dbox ]]' \
 #            '/project folders 2021/proj 2021-10 AlphaSigma/temp_data/eee7.txt'
 notes, txt_path = ff.read_txt(txt_path)
-note = notes[notes.find('%%%'):]
-nx = gf.find_param(note, 'nx', int)
-ny = gf.find_param(note, 'ny', int)
-dx = gf.find_param(note, 'dx', float)
-nw = gf.find_param(note, 'nw', int)
-wln = gf.find_param(note, 'wln', float)
+txt_note = notes[notes.find('%%%'):]
+nx = gf.find_param(txt_note, 'nx', int)
+ny = gf.find_param(txt_note, 'ny', int)
+dx = gf.find_param(txt_note, 'dx', float)
+nw = gf.find_param(txt_note, 'nw', int)
+wln = gf.find_param(txt_note, 'wln', float)
 if wln[0] != 0.:
     wln = [0.] + wln
 blank = np.zeros((ny, nx))

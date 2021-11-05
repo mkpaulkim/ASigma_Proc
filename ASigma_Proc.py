@@ -1,5 +1,4 @@
 import os
-
 import numpy as np
 import pycubelib.tkinter_parts as tp
 import pycubelib.files_functions as ff
@@ -22,8 +21,8 @@ btn_nextn = tp.CmdButton(fp, (100, 200, 10), 'next n')
 btn_inv = tp.CmdButton(fp, (450, 200, 5), 'inv', 'gray90')
 btn_makezz = tp.CmdButton(fp, (100, 250, 10), 'make ZZ_n')
 btn_note = tp.CmdButton(fp, (100, 350, 10), 'notes')
+btn_save = tp.CmdButton(fp, (250, 350, 10), 'save')
 btn_detail = tp.CmdButton(fp, (450, 250, 5), 'detail', 'gray90')
-btn_diffract = tp.CmdButton(fp, (850, 150, 10), 'diffract', 'gray90')
 btn_proc = tp.CmdButton(fp, (850, 200, 10), 'proc')
 btn_graphall = tp.CmdButton(fp, (850, 250, 10), 'graph all')
 btn_mayavi = tp.CmdButton(fp, (850, 300, 10), 'mayavi')
@@ -48,6 +47,8 @@ z0_roi = 0.
 zh = 0.
 qxys = (0., 0., 0.)
 mnf = (0, 0)
+txt_note = ''
+notes = ''
 
 nxydw = (0, 0, 0, 0)
 wln = []
@@ -59,7 +60,6 @@ zz_1ns = []
 zz_12ns = []
 zz_proc = []
 noise = []
-notes = ''
 
 
 def program_loop():
@@ -76,7 +76,7 @@ def program_loop():
 
 
 def read_txt():
-    global txt_path, nxydw, wln, blank, notes
+    global txt_path, nxydw, wln, blank, txt_note
 
     text, txt_path = ff.read_txt()
     nx = gf.find_param(text, 'nx')
@@ -91,22 +91,20 @@ def read_txt():
     ent_nw.set_entry(nw)
     ent_n.set_entry(0)
 
-    note = gf.runstamp(cwd)
-    note += f'\n>> txt_path = {txt_path}'
-    note += f'\n{text}'
+    txt_note = f'>> txt_path = {txt_path}'
+    txt_note += f'\n{text}'
 
     if len(wln) < nw + 1:
         wln = [0.0] + wln
-        note += f'\n> !!! len(wln) < nw + 1 = {nw + 1}'
-        note += f'\n> new wln: {gf.prn_list("wl", wln)}'
+        txt_note += f'\n> !!! len(wln) < nw + 1 = {nw + 1}'
+        txt_note += f'\n> new wln: {gf.prn_list("wl", wln)} \n'
 
-    notes = note
-    print(note)
+    print(txt_note)
     print(f'> read TXT: done ...')
 
 
 def read_phs():
-    global hhh, notes
+    global hhh
     nx, ny, dx, nw = nxydw
 
     print()
@@ -126,15 +124,13 @@ def read_phs():
         capA, _ = gf.path_parts(hh_path)
         pf.plotAAB(hh, capA=capA, roi=roi, sxy=sxy)
 
-        note = f'> hh_path = {hh_path}'
-        print(note)
-        notes += '\n' + note
+        print(f'> hh_path = {hh_path}')
 
     print(f'> read HHp: done ...')
 
 
 def get_lam1ns():
-    global lam_1ns, zz_ns, zz_1ns, zz_12ns, noise, notes
+    global lam_1ns, zz_ns, zz_1ns, zz_12ns, noise
     nx, ny, dx, nw = nxydw
 
     lam_1ns = [0, 0]
@@ -153,14 +149,8 @@ def get_lam1ns():
     capA = gf.path_parts(ent_txtpath.get_val(str))[0].replace('.txt', '_aa.png')
     pf.plotAAB(hhh[0], capA=capA, roi=roi, sxy=sxy, ulimit=(0, 1))
 
-    t = notes.find('>>> ')
-    if t > 0:
-        notes = notes[:t-2]
-
-    note = f'\n>>> get_lam1ns: reset zz_ns, zz_1ns, zz_12ns ...'
-    note += f'\n' + gf.prn_list('lam_1ns', lam_1ns, 1)
-    notes += '\n' + note
-    print(note)
+    print('\n>>> get_lam1ns: reset zz_ns, zz_1ns, zz_12ns ...')
+    print(gf.prn_list('lam_1ns', lam_1ns, 1) + '\n')
 
 
 def nextn():
@@ -174,7 +164,7 @@ def nextn():
 
 
 def make_zz():
-    global zz_ns, zz_1ns, zz_12ns, zz_proc, noise, notes
+    global zz_ns, zz_1ns, zz_12ns, zz_proc, noise
 
     m = ent_n.get_val()
     sign = 1 - btn_inv.is_on() * 2
@@ -184,13 +174,8 @@ def make_zz():
     hha = hhh[0].copy()
     hhp = hhh[m].copy()
 
-    note = f'> make_zz: m = {m}; sign = {sign}; wl_{m} = {wl:.8f}; lam_1{m} = {lam1n:.1f}; ' \
-           f'zh = {zh:.1f}; z0_roi = {z0_roi:.1f}; mnf = {mnf}'
-
     if m >= 1:
-        if btn_diffract.is_on():
-            hhp, hha = df.diffract(hhh[m], hha, wl, nxydw, zh)
-            note += f'\n> diffract: m = {m} zh = {zh:.1f}'
+        hhp, hha = df.diffract(hhh[m], hha, wl, nxydw, zh)
         zz_ns[m] = sign * hhp * wl / pi2
 
         pf.plotAAB(zz_ns[m], figname='ZZn', capA=f'ZZ_{m}', capB=f'lam_{m} = {wl:.8f}',
@@ -225,23 +210,21 @@ def make_zz():
                    capB=f'lam12 = {lam_1ns[2]:.1f}; lam1{m} = {lam_1ns[m]:.1f}; noise = {noise[m]:.1f}',
                    roi=roi, sxy=sxy, ulimit=(-lam12/2, lam12/2))
 
-    notes += '\n' + note
-    print(note)
+    print(f'> make_zz: m = {m}; sign = {sign}; wl_{m} = {wl:.8f}; lam_1{m} = {lam1n:.1f}; ' 
+          f'zh = {zh:.1f}; z0_roi = {z0_roi:.1f}; mnf = {mnf}')
 
 
 def proc_zz():
-    global zz_proc, notes
+    global zz_proc, proc_noise
 
     n = ent_n.get_val()
     lam12 = lam_1ns[2]
     zz_proc = df.zz_tilt(zz_12ns[n], nxydw, qxys, lam12)
-    _, noise[n] = df.roi_measure(zz_proc, roi)
-    pf.plotAAB(zz_proc, figname='ZZ12n', capA=f'ZZ_proc', capB=f'lam12 = {lam_1ns[2]:.1f}; noise = {noise[n]:.1f}',
+    _, proc_noise = df.roi_measure(zz_proc, roi)
+    pf.plotAAB(zz_proc, figname='ZZproc', capA=f'ZZ_proc', capB=f'lam12 = {lam_1ns[2]:.1f}; noise = {proc_noise:.1f}',
                roi=roi, sxy=sxy, ulimit=(-lam12/2, lam12/2))
 
-    note = f'> proc_zz: qxys = {qxys}'
-    notes += '\n' + note
-    print(note)
+    print(f'\n> proc_zz: qxys = {qxys}')
 
 
 def mayavi():
@@ -275,11 +258,33 @@ def graph_all():
 
 
 def print_notes():
+    global notes
+
+    notes = txt_note
+    notes += f'> ================'
+    notes += '\n' + gf.runstamp(cwd)
+    notes += '\n' + gf.prn_list('lam_1ns', lam_1ns, 1)
+    notes += '\n' + gf.prn_list('roi', roi, 0) + f'; z0_roi = {z0_roi:.1f}'
+    notes += '\n' + gf.prn_list('qxys', qxys, 3) + f'; zh = {zh:.1f}'
+    notes += '\n' + gf.prn_list('mnf', mnf, 0)
+    notes += '\n' + gf.prn_list('noise', noise, 1)[:-2] + f' + [{proc_noise:.1f}]; '
+
     print()
     print(f'> notes ---------------------------------------------------------------------')
     print(notes)
     print(f'> ---------------------------------------------------------------------------')
     print()
+
+
+def save_zzproc():
+    from tkinter import filedialog
+
+    proc_txt_file, _ = gf.path_parts(txt_path.replace('.txt', '_proc.txt'), 1)
+    proc_txt_path = filedialog.asksaveasfilename(initialfile=proc_txt_file)
+    png_path = proc_txt_path.replace('.txt', '.png')
+
+    ff.write_txt(notes, proc_txt_path)
+    ff.write_png(zz_proc, png_path, alimit=(-lam_1ns[2]/2, lam_1ns[2]/2))
 
 
 def adios():
@@ -295,9 +300,9 @@ btn_lam1ns.command(get_lam1ns)
 btn_nextn.command(nextn)
 btn_makezz.command(make_zz)
 btn_note.command(print_notes)
+btn_save.command(save_zzproc)
 btn_inv.command(btn_inv.switch)
 btn_detail.command(btn_detail.switch)
-btn_diffract.command(btn_diffract.switch)
 btn_proc.command(proc_zz)
 btn_graphall.command(graph_all)
 btn_mayavi.command(mayavi)
