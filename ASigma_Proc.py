@@ -6,7 +6,7 @@ import pycubelib.general_functions as gf
 import pycubelib.plotting_functions as pf
 import pycubelib.data_functions as df
 
-cwd = os.getcwd()
+# cwd = os.getcwd()
 pi = np.pi
 pi2 = pi * 2
 pi2limit = (-pi, pi)
@@ -60,6 +60,7 @@ zz_1ns = []
 zz_12ns = []
 zz_proc = []
 noise = []
+proc_noise = 0.0
 
 
 def program_loop():
@@ -262,7 +263,7 @@ def print_notes():
 
     notes = txt_note
     notes += f'> ================'
-    notes += '\n' + gf.runstamp(cwd)
+    notes += '\n' + gf.runstamp(__file__)
     notes += '\n' + gf.prn_list('lam_1ns', lam_1ns, 1)
     notes += '\n' + gf.prn_list('roi', roi, 0) + f'; z0_roi = {z0_roi:.1f}'
     notes += '\n' + gf.prn_list('qxys', qxys, 3) + f'; zh = {zh:.1f}'

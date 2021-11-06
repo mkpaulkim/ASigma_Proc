@@ -7,9 +7,9 @@ pi2 = pi * 2
 
 
 def runstamp(script_path):
-    s_path, _ = path_parts(script_path, 2)
+    s_path, _ = path_parts(script_path, 3)
     time_stamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    stamp = f'[.../{s_path}] {time_stamp}'
+    stamp = f'[{s_path}] {time_stamp}'
     return stamp
 
 
