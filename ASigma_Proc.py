@@ -1,4 +1,4 @@
-import os
+# import os
 import numpy as np
 import pycubelib.tkinter_parts as tp
 import pycubelib.files_functions as ff
@@ -6,13 +6,12 @@ import pycubelib.general_functions as gf
 import pycubelib.plotting_functions as pf
 import pycubelib.data_functions as df
 
-# cwd = os.getcwd()
 pi = np.pi
 pi2 = pi * 2
 pi2limit = (-pi, pi)
 sxy = (1, 1)
 
-fp = tp.tkwindow('AlphaSigmaProc', (20, 50, 1050, 400), tkbg='gray85')
+fp = tp.tkwindow('AlphaSigmaProc', (20, 50, 1500, 400), tkbg='gray85')
 
 btn_readtxt = tp.CmdButton(fp, (100, 50, 10), 'read TXT')
 btn_readphs = tp.CmdButton(fp, (100, 100, 10), 'read HHp')
@@ -20,12 +19,12 @@ btn_lam1ns = tp.CmdButton(fp, (100, 150, 10), 'get lam_1ns')
 btn_nextn = tp.CmdButton(fp, (100, 200, 10), 'next n')
 btn_inv = tp.CmdButton(fp, (450, 200, 5), 'inv', 'gray90')
 btn_makezz = tp.CmdButton(fp, (100, 250, 10), 'make ZZ_n')
-btn_note = tp.CmdButton(fp, (100, 350, 10), 'notes')
-btn_save = tp.CmdButton(fp, (250, 350, 10), 'save')
 btn_detail = tp.CmdButton(fp, (450, 250, 5), 'detail', 'gray90')
-btn_proc = tp.CmdButton(fp, (850, 200, 10), 'proc')
 btn_graphall = tp.CmdButton(fp, (850, 250, 10), 'graph all')
 btn_mayavi = tp.CmdButton(fp, (850, 300, 10), 'mayavi')
+btn_note = tp.CmdButton(fp, (100, 350, 10), 'notes')
+btn_save = tp.CmdButton(fp, (250, 350, 10), 'save')
+btn_plot = tp.CmdButton(fp, (850, 350, 10), 'plot')
 btn_adios = tp.CmdButton(fp, (850, 50, 10), 'adios', 'indian red')
 
 ent_txtpath = tp.ParamEntry(fp, (220, 55, 35), '', '')
@@ -36,10 +35,14 @@ ent_lam1n = tp.ParamEntry(fp, (300, 250, 15), 0, 'lam1n')
 ent_roi = tp.ParamEntry(fp, (600, 50, 25), '1200, 900, 10, 10', 'ixy rxy')
 ent_z0roi = tp.ParamEntry(fp, (600, 100, 15), 800.0, 'Z0_roi')
 ent_zh = tp.ParamEntry(fp, (600, 150, 15), 0.0, 'Zh')
-ent_qxy = tp.ParamEntry(fp, (600, 200, 25), '-0.3, 0, -3e-5', 'qxys')
 ent_mnf = tp.ParamEntry(fp, (600, 250, 15), '3, 1', 'mnf')
+ent_np = tp.ParamEntry(fp, (800, 355, 5), 0, '')
 
 prog_n = tp.ProgressBar(fp, (100, 310, 410), '')
+
+btn_proc = tp.CmdButton(fp, (1100, 50, 10), 'proc')
+ent_qxy = tp.ParamEntry(fp, (1100, 100, 25), '-0.3, 0, -3e-5', 'qxys')
+ent_mnfp = tp.ParamEntry(fp, (1100, 150, 15), '3, 1', 'mnfp')
 
 txt_path = ''
 roi = (0, 0, 0, 0)
@@ -70,7 +73,6 @@ def program_loop():
     roi = ent_roi.get_list_val()
     z0_roi = ent_z0roi.get_val(float)
     zh = ent_zh.get_val(float)
-    qxys = ent_qxy.get_list_val(float)
     mnf = ent_mnf.get_list_val()
 
     fp.after(tloop, program_loop)
@@ -123,7 +125,7 @@ def read_phs():
         prog_n.setval(100 * m / nw)
         ent_phspath.set_entry(hh_path)
         capA, _ = gf.path_parts(hh_path)
-        pf.plotAAB(hh, capA=capA, roi=roi, sxy=sxy)
+        pf.plotAAB(hh, figname='HHn', capA=capA, roi=roi, sxy=sxy)
 
         print(f'> hh_path = {hh_path}')
 
@@ -148,7 +150,7 @@ def get_lam1ns():
     ent_n.set_entry(0)
     prog_n.setval(0)
     capA = gf.path_parts(ent_txtpath.get_val(str))[0].replace('.txt', '_aa.png')
-    pf.plotAAB(hhh[0], capA=capA, roi=roi, sxy=sxy, ulimit=(0, 1))
+    pf.plotAAB(hhh[0], figname='HHn', capA=capA, roi=roi, sxy=sxy, ulimit=(0, 1))
 
     print('\n>>> get_lam1ns: reset zz_ns, zz_1ns, zz_12ns ...')
     print(gf.prn_list('lam_1ns', lam_1ns, 1) + '\n')
@@ -168,32 +170,26 @@ def make_zz():
     global zz_ns, zz_1ns, zz_12ns, zz_proc, noise
 
     m = ent_n.get_val()
+    nw = ent_nw.get_val()
     sign = 1 - btn_inv.is_on() * 2
     wl = wln[m]
     lam1n = lam_1ns[m] = ent_lam1n.get_val(float)
     lam12 = lam_1ns[2]
     hha = hhh[0].copy()
-    hhp = hhh[m].copy()
 
-    if m >= 1:
+    if 1 <= m <= nw:
         hhp, hha = df.diffract(hhh[m], hha, wl, nxydw, zh)
         zz_ns[m] = sign * hhp * wl / pi2
 
-        pf.plotAAB(zz_ns[m], figname='ZZn', capA=f'ZZ_{m}', capB=f'lam_{m} = {wl:.8f}',
-                   roi=roi, sxy=sxy, ulimit=(-wl/2, wl/2))
-
-    if m >= 2:
+    if 2 <= m <= nw:
         zz1n = (np.mod((zz_ns[1] * pi2 / wln[1] - zz_ns[m] * pi2 / wln[m]) + pi, pi2) - pi) * lam1n / pi2
         z_roi, _ = df.roi_cyclic_measure(zz1n, roi, lam1n)
         zz_1ns[m] = np.mod(zz1n - z_roi + z0_roi + lam1n/2, lam1n) - lam1n/2
 
-        pf.plotAAB(zz_1ns[m], figname='ZZ1n', capA=f'ZZ_1{m}', capB=f'lam_1{m} = {lam_1ns[m]:.1f}',
-                   roi=roi, sxy=sxy, ulimit=(-lam1n/2, lam1n/2))
-
     if m == 2:
         zz_12ns[2] = zz_1ns[2].copy()
 
-    if m >= 3:
+    if 3 <= m <= nw:
         graphs, gxy = df.calib_lam1n(zz_12ns[m-1], zz_1ns[m], lam1n, roi)
         if btn_detail.is_on():
             pf.graph_many(graphs, 'calibrate', gxy)
@@ -202,17 +198,45 @@ def make_zz():
         if btn_detail.is_on():
             pf.graph_many(graphs, 'stitch', gxy, sxy=(1, .75))
 
-    if m >= 2:
+    if 2 <= m <= nw:
         zz_12ns[m] = df.cyclic_medfilter(zz_12ns[m], mnf, lam12)
         zz_proc = zz_12ns[m].copy()
-
         _, noise[m] = df.roi_measure(zz_12ns[m], roi)
-        pf.plotAAB(zz_12ns[m], figname='ZZ12n', capA=f'ZZ_12{m}',
-                   capB=f'lam12 = {lam_1ns[2]:.1f}; lam1{m} = {lam_1ns[m]:.1f}; noise = {noise[m]:.1f}',
-                   roi=roi, sxy=sxy, ulimit=(-lam12/2, lam12/2))
+
+    ent_np.set_entry(m)
+    plot_n()
 
     print(f'> make_zz: m = {m}; sign = {sign}; wl_{m} = {wl:.8f}; lam_1{m} = {lam1n:.1f}; ' 
           f'zh = {zh:.1f}; z0_roi = {z0_roi:.1f}; mnf = {mnf}')
+
+
+def plot_n():
+    np = ent_np.get_val()
+    nw = ent_nw.get_val()
+    wl = wln[np]
+    lam1n = lam_1ns[np]
+    lam12 = lam_1ns[2]
+
+    if np > nw: return
+
+    if np == 0: rep = '_aa.png'; ulim = (0., 1.)
+    else: rep = f'_{np}p.png'; ulim = pi2limit
+    capA, _ = gf.path_parts(txt_path.replace('.txt', rep))
+    pf.plotAAB(hhh[np], figname='HHn', capA=capA, roi=roi, sxy=sxy, ulimit=ulim)
+
+    if np < 1: return
+
+    pf.plotAAB(zz_ns[np], figname='ZZn', capA=f'ZZ_{np}', capB=f'lam_{np} = {wl:.8f}',
+               roi=roi, sxy=sxy, ulimit=(-wl/2, wl/2))
+
+    if np < 2: return
+
+    pf.plotAAB(zz_1ns[np], figname='ZZ1n', capA=f'ZZ_1{np}', capB=f'lam_1{np} = {lam1n:.1f}',
+               roi=roi, sxy=sxy, ulimit=(-lam1n/2, lam1n/2))
+
+    pf.plotAAB(zz_12ns[np], figname='ZZ12n', capA=f'ZZ_12{np}',
+               capB=f'lam12 = {lam12:.1f}; lam1{np} = {lam1n:.1f}; noise = {noise[np]:.1f}',
+               roi=roi, sxy=sxy, ulimit=(-lam12/2, lam12/2))
 
 
 def proc_zz():
@@ -220,6 +244,8 @@ def proc_zz():
 
     n = ent_n.get_val()
     lam12 = lam_1ns[2]
+    qxys = ent_qxy.get_list_val(float)
+
     zz_proc = df.zz_tilt(zz_12ns[n], nxydw, qxys, lam12)
     _, proc_noise = df.roi_measure(zz_proc, roi)
     pf.plotAAB(zz_proc, figname='ZZproc', capA=f'ZZ_proc', capB=f'lam12 = {lam_1ns[2]:.1f}; noise = {proc_noise:.1f}',
@@ -265,8 +291,8 @@ def print_notes():
     notes += f'> ================'
     notes += '\n' + gf.runstamp(__file__)
     notes += '\n' + gf.prn_list('lam_1ns', lam_1ns, 1)
-    notes += '\n' + gf.prn_list('roi', roi, 0) + f'; z0_roi = {z0_roi:.1f}'
-    notes += '\n' + gf.prn_list('qxys', qxys, 3) + f'; zh = {zh:.1f}'
+    notes += '\n' + gf.prn_list('roi', roi, 0) + f'; z0_roi = {z0_roi:.1f}; zh = {zh:.1f}'
+    # notes += '\n' + gf.prn_list('qxys', qxys, 3) + f'; zh = {zh:.1f}'
     notes += '\n' + gf.prn_list('mnf', mnf, 0)
     notes += '\n' + gf.prn_list('noise', noise, 1)[:-2] + f' + [{proc_noise:.1f}]; '
 
@@ -307,6 +333,7 @@ btn_detail.command(btn_detail.switch)
 btn_proc.command(proc_zz)
 btn_graphall.command(graph_all)
 btn_mayavi.command(mayavi)
+btn_plot.command(plot_n)
 btn_adios.command(adios)
 
 btn_inv.on()
