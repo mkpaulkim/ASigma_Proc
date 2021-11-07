@@ -9,7 +9,7 @@ import pycubelib.data_functions as df
 pi = np.pi
 pi2 = pi * 2
 pi2limit = (-pi, pi)
-sxy = (1, 1)
+sxy = (.75, 1)
 
 fp = tp.tkwindow('AlphaSigmaProc', (20, 50, 1500, 400), tkbg='gray85')
 
@@ -21,10 +21,9 @@ btn_inv = tp.CmdButton(fp, (450, 200, 5), 'inv', 'gray90')
 btn_makezz = tp.CmdButton(fp, (100, 250, 10), 'make ZZ_n')
 btn_detail = tp.CmdButton(fp, (450, 250, 5), 'detail', 'gray90')
 btn_graphall = tp.CmdButton(fp, (850, 250, 10), 'graph all')
-btn_mayavi = tp.CmdButton(fp, (850, 300, 10), 'mayavi')
-btn_note = tp.CmdButton(fp, (100, 350, 10), 'notes')
-btn_save = tp.CmdButton(fp, (250, 350, 10), 'save')
-btn_plot = tp.CmdButton(fp, (850, 350, 10), 'plot')
+btn_note = tp.CmdButton(fp, (850, 150, 10), 'notes')
+btn_save = tp.CmdButton(fp, (850, 200, 10), 'save')
+btn_plot = tp.CmdButton(fp, (850, 300, 10), 'plot')
 btn_adios = tp.CmdButton(fp, (850, 50, 10), 'adios', 'indian red')
 
 ent_txtpath = tp.ParamEntry(fp, (220, 55, 35), '', '')
@@ -32,21 +31,24 @@ ent_phspath = tp.ParamEntry(fp, (220, 105, 35), '', '')
 ent_n = tp.ParamEntry(fp, (250, 205, 5), 0, 'n')
 ent_nw = tp.ParamEntry(fp, (350, 205, 5), 0, 'nw')
 ent_lam1n = tp.ParamEntry(fp, (300, 250, 15), 0, 'lam1n')
-ent_roi = tp.ParamEntry(fp, (600, 50, 25), '1200, 900, 10, 10', 'ixy rxy')
-ent_z0roi = tp.ParamEntry(fp, (600, 100, 15), 800.0, 'Z0_roi')
+ent_roi = tp.ParamEntry(fp, (600, 50, 25), '1000, 500, 10, 10', 'ixy rxy')
+ent_z0roi = tp.ParamEntry(fp, (600, 100, 15), 0.0, 'Z0_roi')
 ent_zh = tp.ParamEntry(fp, (600, 150, 15), 0.0, 'Zh')
 ent_mnf = tp.ParamEntry(fp, (600, 250, 15), '3, 1', 'mnf')
-ent_np = tp.ParamEntry(fp, (800, 355, 5), 0, '')
+ent_np = tp.ParamEntry(fp, (800, 305, 5), 0, '')
 
 prog_n = tp.ProgressBar(fp, (100, 310, 410), '')
 
 btn_proc = tp.CmdButton(fp, (1100, 50, 10), 'proc')
 ent_qxy = tp.ParamEntry(fp, (1100, 100, 25), '-0.3, 0, -3e-5', 'qxys')
 ent_mnfp = tp.ParamEntry(fp, (1100, 150, 15), '3, 1', 'mnfp')
+btn_dnoise = tp.CmdButton(fp, (1100, 200, 10), 'denoise')
+ent_gamma = tp.ParamEntry(fp, (1100, 250, 15), 1.0, 'gamma')
+btn_mayavi = tp.CmdButton(fp, (1100, 300, 10), 'mayavi')
 
 txt_path = ''
 roi = (0, 0, 0, 0)
-z0_roi = 0.
+# z0_roi = 0.
 zh = 0.
 qxys = (0., 0., 0.)
 mnf = (0, 0)
@@ -67,11 +69,11 @@ proc_noise = 0.0
 
 
 def program_loop():
-    global txt_path, roi, z0_roi, zh, qxys, mnf
+    global txt_path, roi, zh, qxys, mnf
 
     txt_path = ent_txtpath.get_val(str)
     roi = ent_roi.get_list_val()
-    z0_roi = ent_z0roi.get_val(float)
+    # z0_roi = ent_z0roi.get_val(float)
     zh = ent_zh.get_val(float)
     mnf = ent_mnf.get_list_val()
 
@@ -82,11 +84,14 @@ def read_txt():
     global txt_path, nxydw, wln, blank, txt_note
 
     text, txt_path = ff.read_txt()
-    nx = gf.find_param(text, 'nx')
-    ny = gf.find_param(text, 'ny')
-    dx = gf.find_param(text, 'dx', float)
-    nw = gf.find_param(text, 'nw')
-    wln = gf.find_param(text, 'wln', float)
+    t = text.find('%%%')
+    param_txt = text[t:]
+    param_txt.replace('([', '[')            # 2018-01 Saturn data
+    nx = gf.find_param(param_txt, 'nx')
+    ny = gf.find_param(param_txt, 'ny')
+    dx = gf.find_param(param_txt, 'dx', float)
+    nw = gf.find_param(param_txt, 'nw')
+    wln = gf.find_param(param_txt, 'wln', float)
     nxydw = (nx, ny, dx, nw)
     blank = np.zeros((ny, nx))
 
@@ -103,6 +108,7 @@ def read_txt():
         txt_note += f'\n> new wln: {gf.prn_list("wl", wln)} \n'
 
     print(txt_note)
+    # print(f'< len(wln) = {len(wln)}: {wln}')
     print(f'> read TXT: done ...')
 
 
@@ -171,6 +177,7 @@ def make_zz():
 
     m = ent_n.get_val()
     nw = ent_nw.get_val()
+    z0_roi = ent_z0roi.get_val(float)
     sign = 1 - btn_inv.is_on() * 2
     wl = wln[m]
     lam1n = lam_1ns[m] = ent_lam1n.get_val(float)
@@ -242,16 +249,35 @@ def plot_n():
 def proc_zz():
     global zz_proc, proc_noise
 
-    n = ent_n.get_val()
+    m = ent_n.get_val()
     lam12 = lam_1ns[2]
     qxys = ent_qxy.get_list_val(float)
+    mnfp = ent_mnfp.get_list_val()
 
-    zz_proc = df.zz_tilt(zz_12ns[n], nxydw, qxys, lam12)
+    zz_proc = df.zz_tilt(zz_12ns[m], nxydw, qxys, lam12)
+    zz_proc = df.cyclic_medfilter(zz_proc, mnfp, lam12)
+
+    z0_roi = ent_z0roi.get_val(float)
+    z_roi, _ = df.roi_cyclic_measure(zz_proc, roi, lam12)
+    zz_proc = np.mod(zz_proc - z_roi + z0_roi + lam12/2, lam12) - lam12/2
+
     _, proc_noise = df.roi_measure(zz_proc, roi)
     pf.plotAAB(zz_proc, figname='ZZproc', capA=f'ZZ_proc', capB=f'lam12 = {lam_1ns[2]:.1f}; noise = {proc_noise:.1f}',
                roi=roi, sxy=sxy, ulimit=(-lam12/2, lam12/2))
 
-    print(f'\n> proc_zz: qxys = {qxys}')
+    print(f'\n> proc_zz: qxys = {qxys}; mnfp = {mnfp}; proc_noise = {proc_noise:.1f}')
+
+
+def denoise():
+    global zz_proc
+
+    gamma = ent_gamma.get_val(float)
+    d_noise = proc_noise * gamma
+    zz_proc = np.round(zz_proc / d_noise) * d_noise
+    _, noise_new = df.roi_measure(zz_proc, roi)
+    pf.plotAAB(zz_proc, figname='ZZproc', capA=f'ZZ_proc', capB=f'lam12 = {lam_1ns[2]:.1f}; noise = {noise_new:.1f}',
+               roi=roi, sxy=sxy, ulimit=(-lam_1ns[2]/2, lam_1ns[2]/2))
+    print(f'> denoise: d_noise = {d_noise:.1f}: new_noise = {noise_new:.1f}')
 
 
 def mayavi():
@@ -291,7 +317,7 @@ def print_notes():
     notes += f'> ================'
     notes += '\n' + gf.runstamp(__file__)
     notes += '\n' + gf.prn_list('lam_1ns', lam_1ns, 1)
-    notes += '\n' + gf.prn_list('roi', roi, 0) + f'; z0_roi = {z0_roi:.1f}; zh = {zh:.1f}'
+    notes += '\n' + gf.prn_list('roi', roi, 0) + f'; z0_roi = {ent_z0roi.get_val(float):.1f}; zh = {zh:.1f}'
     # notes += '\n' + gf.prn_list('qxys', qxys, 3) + f'; zh = {zh:.1f}'
     notes += '\n' + gf.prn_list('mnf', mnf, 0)
     notes += '\n' + gf.prn_list('noise', noise, 1)[:-2] + f' + [{proc_noise:.1f}]; '
@@ -330,10 +356,13 @@ btn_note.command(print_notes)
 btn_save.command(save_zzproc)
 btn_inv.command(btn_inv.switch)
 btn_detail.command(btn_detail.switch)
-btn_proc.command(proc_zz)
 btn_graphall.command(graph_all)
 btn_mayavi.command(mayavi)
 btn_plot.command(plot_n)
+
+btn_proc.command(proc_zz)
+btn_dnoise.command(denoise)
+
 btn_adios.command(adios)
 
 btn_inv.on()

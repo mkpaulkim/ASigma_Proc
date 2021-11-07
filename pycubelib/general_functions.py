@@ -54,19 +54,20 @@ def find_param(text, varname, typ=int):
 
     text = str.lower(text)
     varname = str.lower(varname)
-    t = text.find(varname)
-    if t < 0:
+    t1 = text.find(varname)
+    if t1 < 0:
         return np.nan
 
-    txt = text[t:]
+    txt = text[t1:]
     txt = txt[txt.find('=')+1:]
     txt = txt[:txt.find(';')]
 
-    t = txt.find('[')
-    if t < 0:
+    t1 = txt.find('[')
+    if t1 < 0:
         val = typ(float(txt))
     else:
-        txt = txt[t+1: -1]
+        t2 = txt.find(']')
+        txt = txt[t1+1: t2-1]
         vv = txt.split(',')
         val = [typ(float(v)) for v in vv]
 

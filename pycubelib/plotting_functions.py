@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-# import mayavi.mlab as ml
+import mayavi.mlab as ml
 
 figx0 = 6.5
 font0 = 'Consolas 10'
@@ -123,7 +123,7 @@ def plt_end(pause):
 
 
 def mayaviAA(AA, figname='mayaviAA', caption='', view=(70, 20), ulimit=(), sxy=(1, 1), cmap='jet'):
-    import mayavi.mlab as ml
+    # import mayavi.mlab as ml
 
     figx0, figy0 = (700, 500)
 
