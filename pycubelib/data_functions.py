@@ -83,6 +83,7 @@ def diffract(hhp, hha, wl, nxydw, zh):
 def zz_tilt(zz, nxydw, qxys, zlam):
     nx, ny, dx, nw = nxydw
     qx, qy, qs = qxys
+    qs *= 1e-3  # convert curvature from 1/mm to 1/um
     ax, ay = (nx * dx, ny * dx)
     x = np.linspace(-ax/2, ax/2 - dx, nx)
     y = np.linspace(-ay/2, ay/2 - dx, ny)

@@ -9,7 +9,7 @@ import pycubelib.data_functions as df
 pi = np.pi
 pi2 = pi * 2
 pi2limit = (-pi, pi)
-sxy = (.75, 1)
+sxy = (.85, 1)
 
 fp = tp.tkwindow('AlphaSigmaProc', (20, 50, 1500, 400), tkbg='gray85')
 
@@ -40,11 +40,12 @@ ent_np = tp.ParamEntry(fp, (800, 305, 5), 0, '')
 prog_n = tp.ProgressBar(fp, (100, 310, 410), '')
 
 btn_proc = tp.CmdButton(fp, (1100, 50, 10), 'proc')
-ent_qxy = tp.ParamEntry(fp, (1100, 100, 25), '-0.3, 0, -3e-5', 'qxys')
+ent_qxy = tp.ParamEntry(fp, (1100, 100, 25), '-0.300, 0.000, -0.020', 'qxys') # qx, qy in rad; ss curvature in 1/mm
 ent_mnfp = tp.ParamEntry(fp, (1100, 150, 15), '3, 1', 'mnfp')
 btn_dnoise = tp.CmdButton(fp, (1100, 200, 10), 'denoise')
 ent_gamma = tp.ParamEntry(fp, (1100, 250, 15), 1.0, 'gamma')
 btn_mayavi = tp.CmdButton(fp, (1100, 300, 10), 'mayavi')
+btn_clear = tp.CmdButton(fp, (1300, 300, 10), 'clear')
 
 txt_path = ''
 roi = (0, 0, 0, 0)
@@ -69,13 +70,15 @@ proc_noise = 0.0
 
 
 def program_loop():
-    global txt_path, roi, zh, qxys, mnf
+    global txt_path, roi, z0_roi, zh, mnf, qxys, mnfp
 
     txt_path = ent_txtpath.get_val(str)
     roi = ent_roi.get_list_val()
-    # z0_roi = ent_z0roi.get_val(float)
+    z0_roi = ent_z0roi.get_val(float)
     zh = ent_zh.get_val(float)
     mnf = ent_mnf.get_list_val()
+    qxys = ent_qxy.get_list_val(float)
+    mnfp = ent_mnfp.get_list_val()
 
     fp.after(tloop, program_loop)
 
@@ -155,7 +158,8 @@ def get_lam1ns():
 
     ent_n.set_entry(0)
     prog_n.setval(0)
-    capA = gf.path_parts(ent_txtpath.get_val(str))[0].replace('.txt', '_aa.png')
+    # capA = gf.path_parts(ent_txtpath.get_val(str))[0].replace('.txt', '_aa.png')
+    capA = gf.path_parts(txt_path)[0].replace('.txt', '_aa.png')
     pf.plotAAB(hhh[0], figname='HHn', capA=capA, roi=roi, sxy=sxy, ulimit=(0, 1))
 
     print('\n>>> get_lam1ns: reset zz_ns, zz_1ns, zz_12ns ...')
@@ -177,7 +181,7 @@ def make_zz():
 
     m = ent_n.get_val()
     nw = ent_nw.get_val()
-    z0_roi = ent_z0roi.get_val(float)
+    # z0_roi = ent_z0roi.get_val(float)
     sign = 1 - btn_inv.is_on() * 2
     wl = wln[m]
     lam1n = lam_1ns[m] = ent_lam1n.get_val(float)
@@ -251,19 +255,20 @@ def proc_zz():
 
     m = ent_n.get_val()
     lam12 = lam_1ns[2]
-    qxys = ent_qxy.get_list_val(float)
-    mnfp = ent_mnfp.get_list_val()
+    lam1n = lam_1ns[m]
+    # qxys = ent_qxy.get_list_val(float)
+    # mnfp = ent_mnfp.get_list_val()
 
     zz_proc = df.zz_tilt(zz_12ns[m], nxydw, qxys, lam12)
     zz_proc = df.cyclic_medfilter(zz_proc, mnfp, lam12)
 
-    z0_roi = ent_z0roi.get_val(float)
+    # z0_roi = ent_z0roi.get_val(float)
     z_roi, _ = df.roi_cyclic_measure(zz_proc, roi, lam12)
     zz_proc = np.mod(zz_proc - z_roi + z0_roi + lam12/2, lam12) - lam12/2
 
     _, proc_noise = df.roi_measure(zz_proc, roi)
-    pf.plotAAB(zz_proc, figname='ZZproc', capA=f'ZZ_proc', capB=f'lam12 = {lam_1ns[2]:.1f}; noise = {proc_noise:.1f}',
-               roi=roi, sxy=sxy, ulimit=(-lam12/2, lam12/2))
+    capB = f'lam12 = {lam12:.1f}; lam1{m} = {lam1n:.1f}; noise = {proc_noise:.1f}'
+    pf.plotAAB(zz_proc, figname='ZZproc', capA=f'ZZ_proc', capB=capB, roi=roi, sxy=sxy, ulimit=(-lam12/2, lam12/2))
 
     print(f'\n> proc_zz: qxys = {qxys}; mnfp = {mnfp}; proc_noise = {proc_noise:.1f}')
 
@@ -317,9 +322,11 @@ def print_notes():
     notes += f'> ================'
     notes += '\n' + gf.runstamp(__file__)
     notes += '\n' + gf.prn_list('lam_1ns', lam_1ns, 1)
-    notes += '\n' + gf.prn_list('roi', roi, 0) + f'; z0_roi = {ent_z0roi.get_val(float):.1f}; zh = {zh:.1f}'
-    # notes += '\n' + gf.prn_list('qxys', qxys, 3) + f'; zh = {zh:.1f}'
-    notes += '\n' + gf.prn_list('mnf', mnf, 0)
+    # notes += '\n' + gf.prn_list('roi', roi, 0) + f'; z0_roi = {ent_z0roi.get_val(float):.1f}; zh = {zh:.1f}; ' \
+    notes += '\n' + gf.prn_list('roi', roi, 0) + f'; z0_roi = {z0_roi:.1f}; zh = {zh:.1f}; ' \
+                     + gf.prn_list('mnf', mnf, 0)[2:]
+    # mnfp = ent_mnfp.get_list_val()
+    notes += '\n' + gf.prn_list('qxys', qxys, 6) + gf.prn_list('mnfp', mnfp, 0)[2:]
     notes += '\n' + gf.prn_list('noise', noise, 1)[:-2] + f' + [{proc_noise:.1f}]; '
 
     print()
@@ -338,6 +345,15 @@ def save_zzproc():
 
     ff.write_txt(notes, proc_txt_path)
     ff.write_png(zz_proc, png_path, alimit=(-lam_1ns[2]/2, lam_1ns[2]/2))
+
+
+def clear_mem():
+    import gc
+    global hhh, zz_ns, zz_1ns, zz_12ns
+
+    del hhh, zz_ns, zz_1ns, zz_12ns
+    gc.collect()
+    print(f'> clreared: hhh, zz_ns, zz_1ns, zz_12ns')
 
 
 def adios():
@@ -359,6 +375,7 @@ btn_detail.command(btn_detail.switch)
 btn_graphall.command(graph_all)
 btn_mayavi.command(mayavi)
 btn_plot.command(plot_n)
+btn_clear.command(clear_mem)
 
 btn_proc.command(proc_zz)
 btn_dnoise.command(denoise)
