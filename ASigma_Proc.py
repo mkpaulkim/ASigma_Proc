@@ -10,6 +10,7 @@ pi = np.pi
 pi2 = pi * 2
 pi2limit = (-pi, pi)
 sxy = (.85, 1)
+view = (70, 15)
 
 fp = tp.tkwindow('AlphaSigmaProc', (20, 50, 1500, 400), tkbg='gray85')
 
@@ -17,7 +18,6 @@ btn_readtxt = tp.CmdButton(fp, (100, 50, 10), 'read TXT')
 btn_readphs = tp.CmdButton(fp, (100, 100, 10), 'read HHp')
 btn_lam1ns = tp.CmdButton(fp, (100, 150, 10), 'get lam_1ns')
 btn_nextn = tp.CmdButton(fp, (100, 200, 10), 'next n')
-btn_inv = tp.CmdButton(fp, (450, 200, 5), 'inv', 'gray90')
 btn_makezz = tp.CmdButton(fp, (100, 250, 10), 'make ZZ_n')
 btn_detail = tp.CmdButton(fp, (450, 250, 5), 'detail', 'gray90')
 btn_graphall = tp.CmdButton(fp, (850, 250, 10), 'graph all')
@@ -41,7 +41,8 @@ prog_n = tp.ProgressBar(fp, (100, 310, 410), '')
 
 btn_proc = tp.CmdButton(fp, (1100, 50, 10), 'proc')
 ent_qxy = tp.ParamEntry(fp, (1100, 100, 25), '-0.300, 0.000, -0.020', 'qxys') # qx, qy in rad; ss curvature in 1/mm
-ent_mnfp = tp.ParamEntry(fp, (1100, 150, 15), '3, 1', 'mnfp')
+ent_mnfp = tp.ParamEntry(fp, (1100, 150, 15), '5, 10', 'mnfp')
+btn_inv = tp.CmdButton(fp, (1300, 150, 5), 'inv', 'gray90')
 btn_dnoise = tp.CmdButton(fp, (1100, 200, 10), 'denoise')
 ent_gamma = tp.ParamEntry(fp, (1100, 250, 15), 1.0, 'gamma')
 btn_mayavi = tp.CmdButton(fp, (1100, 300, 10), 'mayavi')
@@ -182,7 +183,8 @@ def make_zz():
     m = ent_n.get_val()
     nw = ent_nw.get_val()
     # z0_roi = ent_z0roi.get_val(float)
-    sign = 1 - btn_inv.is_on() * 2
+    # sign = 1 - btn_inv.is_on() * 2
+    sign = 1
     wl = wln[m]
     lam1n = lam_1ns[m] = ent_lam1n.get_val(float)
     lam12 = lam_1ns[2]
@@ -266,6 +268,9 @@ def proc_zz():
     z_roi, _ = df.roi_cyclic_measure(zz_proc, roi, lam12)
     zz_proc = np.mod(zz_proc - z_roi + z0_roi + lam12/2, lam12) - lam12/2
 
+    if btn_inv.is_on():
+        zz_proc = - 1. * zz_proc
+
     _, proc_noise = df.roi_measure(zz_proc, roi)
     capB = f'lam12 = {lam12:.1f}; lam1{m} = {lam1n:.1f}; noise = {proc_noise:.1f}'
     pf.plotAAB(zz_proc, figname='ZZproc', capA=f'ZZ_proc', capB=capB, roi=roi, sxy=sxy, ulimit=(-lam12/2, lam12/2))
@@ -289,7 +294,7 @@ def mayavi():
     n = ent_n.get_val()
     cap = gf.path_parts(txt_path)[0] + f': ZZ_12{n}'
     lam12 = lam_1ns[2]
-    pf.mayaviAA(zz_proc, caption=cap, ulimit=(-lam12/2, lam12/2))
+    pf.mayaviAA(zz_proc, caption=cap, ulimit=(-lam12/2, lam12/2), view=view)
 
     print(f'> mayavi: done ...')
 
@@ -382,7 +387,7 @@ btn_dnoise.command(denoise)
 
 btn_adios.command(adios)
 
-btn_inv.on()
+# btn_inv.on()
 
 tloop = 10
 fp.after(tloop, program_loop)
