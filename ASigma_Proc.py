@@ -385,7 +385,7 @@ def adios():
 btn_readtxt.command(read_txt)
 btn_readphs.command(read_phs)
 btn_lam1ns.command(get_lam1ns)
-# btn_nextn.command(nextn)
+# btn_sumphs.command(nextn)
 btn_nextn.command(btn_nextn.switch)
 btn_makezz.command(make_zz)
 btn_note.command(print_notes)
