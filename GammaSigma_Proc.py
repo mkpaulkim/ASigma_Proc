@@ -191,6 +191,10 @@ def sumphase():
         # delphi = hhh[n] - hhh[n+1]
         delphi = np.mod(hhh[n] - hhh[n+1] + pi, pi2) - pi
         delphi = df.cyclic_medfilter(delphi, mnf, pi2)
+
+        z_roi, _ = df.roi_cyclic_measure(delphi, roi, lam12)
+        delphi = np.mod(delphi - z_roi + z0_roi + lam12/2, lam12) - lam12/2
+
         phi += delphi
 
         pf.plotAAB(delphi, figname='delphi', capA=f'hhh[{n}] - hhh[{n+1}]', roi=roi, sxy=sxy, ulimit=(-pi, pi))
