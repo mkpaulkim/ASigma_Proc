@@ -178,7 +178,7 @@ def get_lam1ns():
 
 def sumphase():
     global zz_ns, zz_1ns, zz_12ns, zz_proc, noise
-    global zz_phi
+
     nx, ny, dx, nw = nxydw
     phi = np.copy(blank)
     lam12 = lam_1ns[2]
@@ -202,6 +202,7 @@ def sumphase():
 
     zz_phi = phi * lam_1ns[nw] / pi2
     pf.plotAAB(zz_phi, figname='zz_phi', capA=f'ZZ_phi', roi=roi, sxy=sxy, ulimit=(-lam12/2, lam12/2))
+    zz_proc = np.copy(zz_phi)
 
 
 def nextn():
@@ -308,7 +309,7 @@ def proc_zz():
     # qxys = ent_qxy.get_list_val(float)
     # mnfp = ent_mnfp.get_list_val()
 
-    zz_proc = df.zz_tilt(zz_phi, nxydw, qxys, lam12)
+    zz_proc = df.zz_tilt(zz_proc, nxydw, qxys, lam12)
     zz_proc = df.cyclic_medfilter(zz_proc, mnfp, lam12)
 
     # z0_roi = ent_z0roi.get_val(float)

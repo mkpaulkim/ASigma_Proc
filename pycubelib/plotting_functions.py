@@ -57,7 +57,7 @@ def graphB(B, figname='graphB', caption='', ulimit=(), xlimit=(), sxy=(1, 1), li
 
 
 def plotAAB(AA, figname='plotAAB', capA='', capB='', cmap='gray', line='#1f77b4',
-            ulimit=(), roi=(), sxy=(1, 1), pause=1):
+            ulimit=(), roi=(), sxy=(1, 1), pause=1, crsr=True):
 
     ay = 3  # vertical size of plotAA relative graphB
 
@@ -83,7 +83,8 @@ def plotAAB(AA, figname='plotAAB', capA='', capB='', cmap='gray', line='#1f77b4'
         roi = (nx//2, ny//2, 10, 10)
     ix, iy, rx, ry = roi
     B = AA[iy, :]
-    put_cursor(roi)
+    if crsr:
+        put_cursor(roi)
 
     plt.subplot2grid((ay + 1, 1), (ay, 0), rowspan=ay)
     plt.plot(B, line)
