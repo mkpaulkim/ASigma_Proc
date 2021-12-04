@@ -83,7 +83,7 @@ def program_loop():
     qxys = ent_qxy.get_list_val(float)
     mnfp = ent_mnfp.get_list_val()
 
-    # if btn_sumphs.is_on():
+    # if btn_qfft.is_on():
     #     nextn()
 
     fp.after(tloop, program_loop)
@@ -445,8 +445,8 @@ def adios():
 btn_readtxt.command(read_txt)
 btn_readphs.command(read_phs)
 # btn_lam1ns.command(get_lam1ns)
-# btn_sumphs.command(nextn)
-# btn_sumphs.command(btn_sumphs.switch)
+# btn_qfft.command(nextn)
+# btn_qfft.command(btn_qfft.switch)
 btn_sumphs.command(sumphase)
 # btn_makezz.command(make_zz)
 btn_note.command(print_notes)
