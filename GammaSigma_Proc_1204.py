@@ -8,192 +8,21 @@ import pycubelib.data_functions as df
 pi = np.pi
 pi2 = pi * 2
 pi2limit = (-pi, pi)
-sxy = (.85, 1.)
-
-fp = tp.tkwindow('GammaSigmaProc', (2030*0 + 50, 50, 1400, 400), tkbg='gray85')
-btn_readtxt = tp.CmdButton(fp, (50, 50, 10), 'read TXT')
-ent_txtpath = tp.ParamEntry(fp, (170, 55, 35), '', '')
-ent_nxydw = tp.ParamEntry(fp, (170, 100, 35), 'nxydw', '')
-btn_readhhp = tp.CmdButton(fp, (50, 150, 10), 'read HHp')
-ent_hhppath = tp.ParamEntry(fp, (170, 155, 35), '', '')
-ent_n = tp.ParamEntry(fp, (100, 200, 5), 'n', '0')
-prog_n = tp.ProgressBar(fp, (170, 200, 285), '')
-ent_roi = tp.ParamEntry(fp, (170, 250, 25), 'ixy, rxy', '200, 600, 30, 30')
-ent_z0roi = tp.ParamEntry(fp, (550, 50, 15), 'roi_Z0', '-1500.0')
-ent_mnf = tp.ParamEntry(fp, (550, 100, 15), 'mf, nf', '3, 1')
-btn_betascan = tp.CmdButton(fp, (700, 50, 10), 'beta scan')
-
-btn_adios = tp.CmdButton(fp, (900, 50, 10), 'adios', 'indian red')
-
-txt_path = ''
-nxydw = (0, 0, 0, 0)
-wln = []
-lam_1ns = []
-blank = []
-hhh = []
-roi = (0, 0, 0, 0)
-z0_roi = 0
-mnf = [0, 0]
-
-
-def program_loop():
-    global roi, z0_roi, mnf
-
-    roi = ent_roi.get_list_val()
-    z0_roi = ent_z0roi.get_val(float)
-    mnf = ent_mnf.get_list_val()
-
-    fp.after(tloop, program_loop)
-
-
-def read_txt():
-    global txt_path, nxydw, wln
-
-    text, txt_path = ff.read_txt()
-    t = text.find('%%%')
-    if t < 0:
-        t = text.find('>>>')
-    param_txt = text[t:]
-    param_txt.replace('([', '[')            # for 2018-01 Saturn data
-    nx = gf.find_param(param_txt, 'nx')
-    ny = gf.find_param(param_txt, 'ny')
-    dx = gf.find_param(param_txt, 'dx', float)
-    nw = gf.find_param(param_txt, 'nw')
-    wln = gf.find_param(param_txt, 'wln', float)
-    nxydw = (nx, ny, dx, nw)
-
-    ent_txtpath.set_entry(txt_path)
-    ent_nxydw.set_entry(nxydw)
-
-    txt_note = f'>> txt_path = {txt_path}'
-    txt_note += f'\n{text}'
-    if len(wln) < nw + 1:
-        wln = [0.0] + wln
-        txt_note += f'\n> !!! len(wln) < nw + 1 = {nw + 1}'
-        txt_note += f'\n> new wln: {gf.prn_list("wl", wln)} \n'
-
-    print(txt_note)
-    print(f'> read TXT: done ...')
-
-    initialize()
-
-
-def initialize():
-    global blank, hhh, lam_1ns
-
-    ent_hhppath.set_entry('')
-    ent_n.set_entry(0)
-    prog_n.setval(0)
-
-    nx, ny, dx, nw = nxydw
-    blank = np.zeros((ny, nx))
-    hhh = []
-
-    lam_1ns = [0, 0]
-    for n in range(2, nw+1):
-        lam_1ns += [wln[1] * wln[n] / (wln[1] - wln[n])]
-
-
-def read_hhp():
-    global hhh
-    nx, ny, dx, nw = nxydw
-
-    hhh = []
-    for n in range(0, nw+1):
-        if n == 0:
-            hh_path = txt_path.replace('.txt', f'_aa.png')
-            hh, _ = ff.read_png(hh_path, alimit=(0., 1.))
-        else:
-            hh_path = txt_path.replace('.txt', f'_{n}p.png')
-            hh, _ = ff.read_png(hh_path, alimit=pi2limit)
-        hhh += [hh]
-
-        ent_hhppath.set_entry(hh_path)
-        ent_n.set_entry(n)
-        prog_n.setval(100 * n / nw)
-
-        capA, _ = gf.path_parts(hh_path)
-        pf.plotAAB(hh, figname='figure 1', capA=capA, roi=roi, sxy=sxy)
-
-        print(f'> hh_path = {hh_path}')
-
-    print(f'> read HHp: done ...')
-
-
-def beta_scan():
-    global zz
-    nx, ny, dx, nw = nxydw
-    lam12 = lam_1ns[2]
-    sumphi = np.copy(blank)
-
-    for n in range(1, nw):
-        ent_n.set_entry(n)
-        prog_n.setval(100 * n / nw)
-
-        delphi = np.mod(hhh[n] - hhh[n+1] + pi, pi2) - pi
-        delphi = df.cyclic_medfilter(delphi, mnf, pi2)
-        ph0_roi = z0_roi * pi2 / lam12
-
-        ph_roi, _ = df.roi_cyclic_measure(delphi, roi, pi2)
-        delphi = np.mod(delphi - ph_roi + ph0_roi + pi, pi2) - pi
-
-        sumphi += delphi
-        _, noise = df.roi_measure(sumphi, roi)
-        noise = noise * lam12 / (pi2 * n)
-
-        print(f'> beta_scan: n = {n}: noise = {noise:.1f}')
-        pf.plotAAB(delphi, figname='figure 1', capA=f'delphi: n = {n}', roi=roi, sxy=sxy, ulimit=(-pi, pi))
-        pf.plotAAB(sumphi, figname='figure 2', capA=f'sumphi: n = {n}', roi=roi, sxy=sxy, ulimit=(),
-                   capB=f'noise = {noise:.1f}')
-
-    pf.plt.pause(5)
-    zz_phi = sumphi * lam_1ns[nw] / pi2
-    _, noise = df.roi_measure(zz_phi, roi)
-
-    print(f'> beta_scan: zz_phi: noise = {noise:.1f}')
-    pf.plotAAB(zz_phi, figname='figure 2', capA=f'ZZ_phi', roi=roi, sxy=sxy, ulimit=(-lam12/2, lam12/2),
-               capB=f'noise = {noise:.1f}')
-
-    # zz_proc = np.copy(zz_phi)
-
-
-def gamma_scan():
-    pass
-
-
-def adios():
-    fp.destroy()
-    print(f'> adios amigos ...')
-    quit()
-
-
-btn_readtxt.command(read_txt)
-btn_readhhp.command(read_hhp)
-btn_betascan.command(beta_scan)
-
-btn_adios.command(adios)
-
-tloop = 10
-fp.after(tloop, program_loop)
-fp.mainloop()
-
-
-'''
 
 sxy = (.85, 1)
 view = (20, -10)
 
-fp = tp.tkwindow('GammaSigmaProc', (2030*0 + 50, 50, 1400, 400), tkbg='gray85')
-btn_readtxt = tp.CmdButton(fp, (50, 50, 10), 'read TXT')
-ent_txtpath = tp.ParamEntry(fp, (170, 55, 35), '', '')
-btn_readhhp = tp.CmdButton(fp, (50, 100, 10), 'read HHp')
-ent_hhppath = tp.ParamEntry(fp, (170, 105, 35), '', '')
+fp = tp.tkwindow('BetaSigmaProc', (20, 50, 1400, 400), tkbg='gray85')
 
-btn_qfft = tp.CmdButton(fp, (50, 200, 10), 'do qfft')
+btn_readtxt = tp.CmdButton(fp, (100, 50, 10), 'read TXT')
+btn_readphs = tp.CmdButton(fp, (100, 100, 10), 'read HHp')
+btn_qfft = tp.CmdButton(fp, (100, 200, 10), 'do qfft')
 btn_note = tp.CmdButton(fp, (850, 150, 10), 'notes')
 btn_save = tp.CmdButton(fp, (850, 200, 10), 'save')
 btn_adios = tp.CmdButton(fp, (850, 50, 10), 'adios', 'indian red')
 
+ent_txtpath = tp.ParamEntry(fp, (220, 55, 35), '', '')
+ent_phspath = tp.ParamEntry(fp, (220, 105, 35), '', '')
 ent_n = tp.ParamEntry(fp, (250, 205, 5), 0, 'n')
 ent_nw = tp.ParamEntry(fp, (350, 205, 5), 0, 'nw')
 ent_lam1n = tp.ParamEntry(fp, (300, 250, 15), 0, 'lam1n')
@@ -230,12 +59,13 @@ zz_proc = []
 noise = []
 proc_noise = 0.0
 fzz = []
-fzz1n = []
+fzz1n=[]
 
 
 def program_loop():
-    global roi, z0_roi, zh, mnf, qxys, mnfp
+    global txt_path, roi, z0_roi, zh, mnf, qxys, mnfp
 
+    txt_path = ent_txtpath.get_val(str)
     roi = ent_roi.get_list_val()
     z0_roi = ent_z0roi.get_val(float)
     zh = ent_zh.get_val(float)
@@ -244,6 +74,67 @@ def program_loop():
     mnfp = ent_mnfp.get_list_val()
 
     fp.after(tloop, program_loop)
+
+
+def read_txt():
+    global txt_path, nxydw, wln, blank, txt_note
+
+    text, txt_path = ff.read_txt()
+    t = text.find('%%%')
+    if t < 0:
+        t = text.find('>>>')
+    param_txt = text[t:]
+    param_txt.replace('([', '[')            # 2018-01 Saturn data
+    nx = gf.find_param(param_txt, 'nx')
+    ny = gf.find_param(param_txt, 'ny')
+    dx = gf.find_param(param_txt, 'dx', float)
+    nw = gf.find_param(param_txt, 'nw')
+    wln = gf.find_param(param_txt, 'wln', float)
+    nxydw = (nx, ny, dx, nw)
+    blank = np.zeros((ny, nx))
+
+    ent_txtpath.set_entry(txt_path)
+    ent_nw.set_entry(nw)
+    ent_n.set_entry(0)
+
+    txt_note = f'>> txt_path = {txt_path}'
+    txt_note += f'\n{text}'
+
+    if len(wln) < nw + 1:
+        wln = [0.0] + wln
+        txt_note += f'\n> !!! len(wln) < nw + 1 = {nw + 1}'
+        txt_note += f'\n> new wln: {gf.prn_list("wl", wln)} \n'
+
+    print(txt_note)
+    print(f'> read TXT: done ...')
+
+    get_lam1ns()
+
+
+def read_phs():
+    global hhh
+    nx, ny, dx, nw = nxydw
+
+    print()
+    hhh = []
+    for m in range(nw+1):
+        if m == 0:
+            hh_path = txt_path.replace('.txt', f'_aa.png')
+            hh, _ = ff.read_png(hh_path, alimit=(0., 1.))
+        else:
+            hh_path = txt_path.replace('.txt', f'_{m}p.png')
+            hh, _ = ff.read_png(hh_path, alimit=pi2limit)
+        hhh += [hh]
+
+        ent_n.set_entry(m)
+        prog_n.setval(100 * m / nw)
+        ent_phspath.set_entry(hh_path)
+        capA, _ = gf.path_parts(hh_path)
+        pf.plotAAB(hh, figname='HHn', capA=capA, roi=roi, sxy=sxy)
+
+        print(f'> hh_path = {hh_path}')
+
+    print(f'> read HHp: done ...')
 
 
 def get_lam1ns():
@@ -389,6 +280,15 @@ def save_zzproc():
     ff.write_png(zz_proc, png_path, alimit=(-lam_1ns[2]/2, lam_1ns[2]/2))
 
 
+def adios():
+    # print(notes)
+    fp.destroy()
+    print(f'> adios amigos ...')
+    quit()
+
+
+btn_readtxt.command(read_txt)
+btn_readphs.command(read_phs)
 btn_qfft.command(do_qfft)
 btn_note.command(print_notes)
 btn_save.command(save_zzproc)
@@ -396,9 +296,14 @@ btn_inv.command(btn_inv.switch)
 btn_mayavi.command(mayavi)
 btn_proc.command(proc_zz)
 
+btn_adios.command(adios)
+
+tloop = 10
+fp.after(tloop, program_loop)
+fp.mainloop()
 
 
-'''
+
 
 
 

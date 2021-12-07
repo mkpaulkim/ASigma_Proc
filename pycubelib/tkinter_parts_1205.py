@@ -44,7 +44,7 @@ class CmdButton:
 
 
 class ParamEntry:
-    def __init__(self, frame, xyw, label='entry', val=0):
+    def __init__(self, frame, xyw, val=0, label='entry'):
         x, y, w = xyw
         self.entry = tk.Entry(frame, font=tkfont, justify=tk.CENTER)
         self.entry['width'] = w
@@ -54,7 +54,7 @@ class ParamEntry:
         self.lbl.place(x=x+w, y=y)
         frame.update_idletasks()
         lw = self.lbl.winfo_width()
-        self.lbl.place(x=x-lw-5, y=y)
+        self.lbl.place(x=x-lw-2, y=y-2)
 
     def set_entry(self, val):
         self.entry.delete(0, tk.END)
