@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-# import mayavi.mlab as ml
+import mayavi.mlab as ml
 
 figx0 = 6.5
 font0 = 'Consolas 10'
@@ -57,9 +57,10 @@ def graphB(B, figname='graphB', caption='', ulimit=(), xlimit=(), sxy=(1, 1), li
 
 
 def plotAAB(AA, figname='plotAAB', capA='', capB='', cmap='gray', line='#1f77b4',
-            ulimit=(), roi=(), sxy=(1, 1), pause=1, crsr=True):
-
-    ay = 3  # vertical size of plotAA relative graphB
+            ulimit=(), roi=(), sxy=(1, 1), pause=1, crsr=True, ay=3):
+    """
+    ay = 3: vertical size of plotAA relative graphB
+    """
 
     ''' plotAA '''
     ny, nx = np.shape(AA)
@@ -78,7 +79,7 @@ def plotAAB(AA, figname='plotAAB', capA='', capB='', cmap='gray', line='#1f77b4'
     plt.imshow(AA, cmap=cmap, aspect='auto')
     plt.title(capA)
 
-    """ graphB """
+    ''' graphB '''
     if len(roi) == 0:
         roi = (nx//2, ny//2, 10, 10)
     ix, iy, rx, ry = roi

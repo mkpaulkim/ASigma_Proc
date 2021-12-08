@@ -9,39 +9,54 @@ pi = np.pi
 pi2 = pi * 2
 pi2limit = (-pi, pi)
 sxy = (.85, 1.)
+view = (20, -10)
 
-fp = tp.tkwindow('GammaSigmaProc', (2030*0 + 50, 50, 1400, 400), tkbg='gray85')
+fp = tp.tkwindow('GammaSigmaProc', (2030*1 + 50, 50, 1200, 400), tkbg='gray85')
 btn_readtxt = tp.CmdButton(fp, (50, 50, 10), 'read TXT')
 ent_txtpath = tp.ParamEntry(fp, (170, 55, 35), '', '')
 ent_nxydw = tp.ParamEntry(fp, (170, 100, 35), 'nxydw', '')
-btn_readhhp = tp.CmdButton(fp, (50, 150, 10), 'read HHp')
-ent_hhppath = tp.ParamEntry(fp, (170, 155, 35), '', '')
-ent_n = tp.ParamEntry(fp, (100, 200, 5), 'n', '0')
-prog_n = tp.ProgressBar(fp, (170, 200, 285), '')
-ent_roi = tp.ParamEntry(fp, (170, 250, 25), 'ixy, rxy', '200, 600, 30, 30')
+ent_lams = tp.ParamEntry(fp, (170, 150, 35), 'lam12, lam1n', '0.0, 0.0')
+btn_readhhp = tp.CmdButton(fp, (50, 200, 10), 'read HHp')
+ent_hhppath = tp.ParamEntry(fp, (170, 200, 35), '', '')
+ent_n = tp.ParamEntry(fp, (100, 250, 5), 'n', '0')
+prog_n = tp.ProgressBar(fp, (170, 250, 285), '')
+ent_roi = tp.ParamEntry(fp, (170, 300, 25), 'ixy, rxy', '200, 550, 30, 30')
 ent_z0roi = tp.ParamEntry(fp, (550, 50, 15), 'roi_Z0', '-1500.0')
 ent_mnf = tp.ParamEntry(fp, (550, 100, 15), 'mf, nf', '3, 1')
-btn_betascan = tp.CmdButton(fp, (700, 50, 10), 'beta scan')
+ent_qxy = tp.ParamEntry(fp, (550, 150, 25), 'qxys', '0.000, 0.000, 0.000') # qx, qy in rad; ss curvature in 1/mm
+ent_pmnf = tp.ParamEntry(fp, (550, 200, 15), 'p_mf, nf', '3, 1')
+btn_inv = tp.CmdButton(fp, (550, 250, 5), 'inv', 'gray90')
+btn_betascan = tp.CmdButton(fp, (800, 50, 10), 'beta scan')
+btn_proc = tp.CmdButton(fp, (800, 150, 10), 'proc')
+btn_mayavi = tp.CmdButton(fp, (800, 250, 10), 'mayavi')
 
-btn_adios = tp.CmdButton(fp, (900, 50, 10), 'adios', 'indian red')
+btn_adios = tp.CmdButton(fp, (1000, 50, 10), 'adios', 'indian red')
 
 txt_path = ''
-nxydw = (0, 0, 0, 0)
+nxydw = []
 wln = []
-lam_1ns = []
+lam_1ns = [0, 0, 0]
+lam12 = 0
 blank = []
 hhh = []
-roi = (0, 0, 0, 0)
+roi = []
 z0_roi = 0
-mnf = [0, 0]
+mnf = []
+qxys = []
+pmnf = []
+zz = []
+zz_proc = []
 
 
 def program_loop():
-    global roi, z0_roi, mnf
+    global roi, z0_roi, mnf, qxys, pmnf, lam12
 
     roi = ent_roi.get_list_val()
     z0_roi = ent_z0roi.get_val(float)
     mnf = ent_mnf.get_list_val()
+    qxys = ent_qxy.get_list_val(float)
+    pmnf = ent_pmnf.get_list_val()
+    lam12 = lam_1ns[2]
 
     fp.after(tloop, program_loop)
 
@@ -79,7 +94,7 @@ def read_txt():
 
 
 def initialize():
-    global blank, hhh, lam_1ns
+    global blank, hhh, lam_1ns, zz
 
     ent_hhppath.set_entry('')
     ent_n.set_entry(0)
@@ -87,11 +102,14 @@ def initialize():
 
     nx, ny, dx, nw = nxydw
     blank = np.zeros((ny, nx))
+    zz = np.copy(blank)
     hhh = []
 
     lam_1ns = [0, 0]
     for n in range(2, nw+1):
         lam_1ns += [wln[1] * wln[n] / (wln[1] - wln[n])]
+
+    ent_lams.set_entry(f'{lam_1ns[2]:.1f}, {lam_1ns[-1]:.1f}')
 
 
 def read_hhp():
@@ -103,9 +121,11 @@ def read_hhp():
         if n == 0:
             hh_path = txt_path.replace('.txt', f'_aa.png')
             hh, _ = ff.read_png(hh_path, alimit=(0., 1.))
+            fig_name = 'figure 1'
         else:
             hh_path = txt_path.replace('.txt', f'_{n}p.png')
             hh, _ = ff.read_png(hh_path, alimit=pi2limit)
+            fig_name = 'figure 2'
         hhh += [hh]
 
         ent_hhppath.set_entry(hh_path)
@@ -113,7 +133,7 @@ def read_hhp():
         prog_n.setval(100 * n / nw)
 
         capA, _ = gf.path_parts(hh_path)
-        pf.plotAAB(hh, figname='figure 1', capA=capA, roi=roi, sxy=sxy)
+        pf.plotAAB(hh, figname=fig_name, capA=capA, roi=roi, sxy=sxy)
 
         print(f'> hh_path = {hh_path}')
 
@@ -122,13 +142,16 @@ def read_hhp():
 
 def beta_scan():
     global zz
+
     nx, ny, dx, nw = nxydw
-    lam12 = lam_1ns[2]
     sumphi = np.copy(blank)
+    limit_12 = (-lam12/2, lam12/2)
 
     for n in range(1, nw):
         ent_n.set_entry(n)
         prog_n.setval(100 * n / nw)
+        lam1n = lam_1ns[n+1]
+        lamnn_ = wln[n] * wln[n+1] / (wln[n] - wln[n+1])
 
         delphi = np.mod(hhh[n] - hhh[n+1] + pi, pi2) - pi
         delphi = df.cyclic_medfilter(delphi, mnf, pi2)
@@ -136,29 +159,45 @@ def beta_scan():
 
         ph_roi, _ = df.roi_cyclic_measure(delphi, roi, pi2)
         delphi = np.mod(delphi - ph_roi + ph0_roi + pi, pi2) - pi
+        _, del_noise = df.roi_measure(delphi * lamnn_ / pi2, roi)
+        pf.plotAAB(delphi * lamnn_ / pi2, figname='figure 1', capA=f'Z_delphi: n = {n}', roi=roi,
+                   sxy=sxy, ulimit=limit_12, capB=f'lamnn_ = {lamnn_:.1f}; noise = {del_noise:.1f}')
 
         sumphi += delphi
-        _, noise = df.roi_measure(sumphi, roi)
-        noise = noise * lam12 / (pi2 * n)
+        zz = sumphi * lam1n / pi2
+        _, sum_noise = df.roi_measure(zz, roi)
+        pf.plotAAB(zz, figname='figure 2', capA=f'ZZ: n = {n}', roi=roi,
+                   sxy=sxy, ulimit=limit_12, capB=f'lam1n = {lam1n:.1f}; noise = {sum_noise:.1f}')
 
-        print(f'> beta_scan: n = {n}: noise = {noise:.1f}')
-        pf.plotAAB(delphi, figname='figure 1', capA=f'delphi: n = {n}', roi=roi, sxy=sxy, ulimit=(-pi, pi))
-        pf.plotAAB(sumphi, figname='figure 2', capA=f'sumphi: n = {n}', roi=roi, sxy=sxy, ulimit=(),
-                   capB=f'noise = {noise:.1f}')
-
-    pf.plt.pause(5)
-    zz_phi = sumphi * lam_1ns[nw] / pi2
-    _, noise = df.roi_measure(zz_phi, roi)
-
-    print(f'> beta_scan: zz_phi: noise = {noise:.1f}')
-    pf.plotAAB(zz_phi, figname='figure 2', capA=f'ZZ_phi', roi=roi, sxy=sxy, ulimit=(-lam12/2, lam12/2),
-               capB=f'noise = {noise:.1f}')
-
-    # zz_proc = np.copy(zz_phi)
+        print(f'> beta_scan: n = {n}: del_noise = {del_noise:.1f}; sum_noise = {sum_noise:.1f}')
 
 
 def gamma_scan():
     pass
+
+
+def proc_zz():
+    global zz_proc
+
+    zz_proc = df.zz_tilt(zz, nxydw, qxys, lam12)
+    zz_proc = df.cyclic_medfilter(zz_proc, pmnf, lam12)
+    z_roi, _ = df.roi_cyclic_measure(zz_proc, roi, lam12)
+    zz_proc = np.mod(zz_proc - z_roi + z0_roi + lam12/2, lam12) - lam12/2
+    if btn_inv.is_on():
+        zz_proc = - 1. * zz_proc
+
+    _, proc_noise = df.roi_measure(zz_proc, roi)
+    capB = f'noise = {proc_noise:.1f}'
+    pf.plotAAB(zz_proc, figname='figure 3', capA=f'ZZ_proc', capB=capB, roi=roi, sxy=sxy, ulimit=(-lam12/2, lam12/2))
+
+    print(f'\n> proc_zz: qxys = {qxys}; pmnf = {pmnf}; proc_noise = {proc_noise:.1f}')
+
+
+def mayavi():
+    cap = gf.path_parts(txt_path)[0]
+    pf.mayaviAA(zz_proc, caption=cap, ulimit=(-lam12/2, lam12/2), view=view)
+
+    print(f'> mayavi: done ...')
 
 
 def adios():
@@ -170,6 +209,9 @@ def adios():
 btn_readtxt.command(read_txt)
 btn_readhhp.command(read_hhp)
 btn_betascan.command(beta_scan)
+btn_proc.command(proc_zz)
+btn_inv.command(btn_inv.switch)
+btn_mayavi.command(mayavi)
 
 btn_adios.command(adios)
 
