@@ -11,7 +11,7 @@ pi2limit = (-pi, pi)
 sxy = (.85, 1.)
 view = (20, -10)
 
-fp = tp.tkwindow('GammaSigmaProc', (2030*1 + 50, 50, 1200, 400), tkbg='gray85')
+fp = tp.tkwindow('GammaSigmaProc', (2030*1 + 50, 50, 1000, 400), tkbg='gray85')
 btn_readtxt = tp.CmdButton(fp, (50, 50, 10), 'read TXT')
 ent_txtpath = tp.ParamEntry(fp, (170, 55, 35), '', '')
 ent_nxydw = tp.ParamEntry(fp, (170, 100, 35), 'nxydw', '')
@@ -25,12 +25,14 @@ ent_z0roi = tp.ParamEntry(fp, (550, 50, 15), 'roi_Z0', '-1500.0')
 ent_mnf = tp.ParamEntry(fp, (550, 100, 15), 'mf, nf', '3, 1')
 ent_qxy = tp.ParamEntry(fp, (550, 150, 25), 'qxys', '0.000, 0.000, 0.000') # qx, qy in rad; ss curvature in 1/mm
 ent_pmnf = tp.ParamEntry(fp, (550, 200, 15), 'p_mf, nf', '3, 1')
-btn_inv = tp.CmdButton(fp, (550, 250, 5), 'inv', 'gray90')
 btn_betascan = tp.CmdButton(fp, (800, 50, 10), 'beta scan')
+btn_gammascan = tp.CmdButton(fp, (800, 100, 10), 'gamma scan')
 btn_proc = tp.CmdButton(fp, (800, 150, 10), 'proc')
-btn_mayavi = tp.CmdButton(fp, (800, 250, 10), 'mayavi')
+btn_mayavi = tp.CmdButton(fp, (800, 200, 10), 'mayavi')
+btn_inv = tp.CmdButton(fp, (550, 250, 5), 'inv', 'gray90')
+# ent_ph = tp.ParamEntry(fp, (550, 300, 15), 'ph_pi', '0.0')
 
-btn_adios = tp.CmdButton(fp, (1000, 50, 10), 'adios', 'indian red')
+btn_adios = tp.CmdButton(fp, (800, 300, 10), 'adios', 'indian red')
 
 txt_path = ''
 nxydw = []
@@ -46,6 +48,7 @@ qxys = []
 pmnf = []
 zz = []
 zz_proc = []
+phis_roi = []
 
 
 def program_loop():
@@ -141,43 +144,92 @@ def read_hhp():
 
 
 def beta_scan():
-    global zz
+    global zz, phis_roi
 
     nx, ny, dx, nw = nxydw
     sumphi = np.copy(blank)
     limit_12 = (-lam12/2, lam12/2)
+    phis_roi = [0, 0]
 
-    for n in range(1, nw):
+    for n in range(2, nw+1):
         ent_n.set_entry(n)
         prog_n.setval(100 * n / nw)
-        lam1n = lam_1ns[n+1]
-        lamnn_ = wln[n] * wln[n+1] / (wln[n] - wln[n+1])
+        lam1n = lam_1ns[n]
+        lamnn = wln[n - 1] * wln[n] / (wln[n - 1] - wln[n])
 
-        delphi = np.mod(hhh[n] - hhh[n+1] + pi, pi2) - pi
+        delphi = np.mod(hhh[n-1] - hhh[n] + pi, pi2) - pi
         delphi = df.cyclic_medfilter(delphi, mnf, pi2)
         ph0_roi = z0_roi * pi2 / lam12
 
         ph_roi, _ = df.roi_cyclic_measure(delphi, roi, pi2)
         delphi = np.mod(delphi - ph_roi + ph0_roi + pi, pi2) - pi
-        _, del_noise = df.roi_measure(delphi * lamnn_ / pi2, roi)
-        pf.plotAAB(delphi * lamnn_ / pi2, figname='figure 1', capA=f'Z_delphi: n = {n}', roi=roi,
-                   sxy=sxy, ulimit=limit_12, capB=f'lamnn_ = {lamnn_:.1f}; noise = {del_noise:.1f}')
+        _, del_noise = df.roi_measure(delphi * lamnn / pi2, roi)
+        # pf.plotAAB(delphi * lamnn / pi2, figname='figure 1', capA=f'Z_delphi: n = {n}', roi=roi,
+        #            sxy=sxy, ulimit=limit_12, capB=f'lamnn = {lamnn:.1f}; noise = {del_noise:.1f}')
+        phis_roi += [ph_roi - ph0_roi]
+        # phis_roi += [ph_roi]
 
         sumphi += delphi
         zz = sumphi * lam1n / pi2
         _, sum_noise = df.roi_measure(zz, roi)
-        pf.plotAAB(zz, figname='figure 2', capA=f'ZZ: n = {n}', roi=roi,
-                   sxy=sxy, ulimit=limit_12, capB=f'lam1n = {lam1n:.1f}; noise = {sum_noise:.1f}')
+        # pf.plotAAB(zz, figname='figure 2', capA=f'ZZ: beta_sacn: n = {n}', roi=roi,
+        #            sxy=sxy, ulimit=limit_12, capB=f'lam1n = {lam1n:.1f}; noise = {sum_noise:.1f}')
 
-        print(f'> beta_scan: n = {n}: del_noise = {del_noise:.1f}; sum_noise = {sum_noise:.1f}')
+        print(f'> ZZ: beta_scan: n = {n}: del_noise = {del_noise:.1f}; sum_noise = {sum_noise:.1f}')
 
 
 def gamma_scan():
-    pass
+    global zz
+
+    nx, ny, dx, nw = nxydw
+    limit_12 = (-lam12/2, lam12/2)
+    lam1n = lam_1ns[-1]
+    eee = np.zeros((ny, nx, nw)) * 1j
+    hha = hhh[0]
+    phi = 0
+    # phi = ent_ph.get_val(float) * pi
+
+    for n in range(1, nw+1):
+        ent_n.set_entry(n)
+        prog_n.setval(100 * n / nw)
+        phi += phis_roi[n]
+
+        eee[:, :, n-1] = hha * np.exp(1j * hhh[n]) * np.exp(1j * phi)
+
+    fff = np.fft.fft(eee, axis=2)
+    fff = np.fft.fftshift(fff, axes=2)
+    fffa = np.abs(fff)
+    pff = np.transpose(np.log10(fffa[roi[1], :, :]))
+
+    z_step = lam12 / (nw-1)
+    zz_ffa = - 1.0 * (np.argmax(fffa, axis=2) * z_step - lam12/2)
+    # zz_ffa = df.cyclic_medfilter(zz_ffa, mnf, lam12)
+    # z_roi, _ = df.roi_cyclic_measure(zz_ffa, roi, lam12)
+    # zz_ffa = np.mod(zz_ffa - z_roi + z0_roi + lam12/2, lam12) - lam12/2
+
+    zz1n = (hhh[1] - hhh[-1]) * lam1n / pi2
+    zz1n = df.cyclic_medfilter(zz1n, mnf, lam1n)
+    z_1n, _ = df.roi_cyclic_measure(zz1n, roi, lam1n)
+    zz1n = np.mod(zz1n - z_1n + z0_roi + lam1n/2, lam1n) - lam1n/2
+    _, noise1n = df.roi_measure(zz1n, roi)
+
+    zz = np.mod(zz_ffa + zz1n + lam12/2, lam12) - lam12/2
+    zz = df.cyclic_medfilter(zz, mnf, lam12)
+    _, noise = df.roi_measure(zz, roi)
+
+    pf.plotAAB(pff, figname='figure 1', capA='log_ffa', sxy=sxy, cmap='jet', crsr=False)
+    pf.plotAAB(zz_ffa, figname='figure 2', capA='ZZ_ffa', capB=f' ', ulimit=limit_12, sxy=sxy, roi=roi)
+    pf.plotAAB(zz1n, figname='figure 3', capA='ZZ_1n', capB=f'noise_1n = {noise1n:.1f}', ulimit=(-lam1n/2, lam1n/2),
+               sxy=sxy, roi=roi)
+    pf.plotAAB(zz, figname='figure 4', capA='ZZ: gamma_scan', capB=f'noise = {noise:.1f}', ulimit=limit_12,
+               sxy=sxy, roi=roi)
+
+    print(f'> ZZ: gamma_scan: noise = {noise:.1f}')
 
 
 def proc_zz():
     global zz_proc
+    limit_12 = (-lam12/2, lam12/2)
 
     zz_proc = df.zz_tilt(zz, nxydw, qxys, lam12)
     zz_proc = df.cyclic_medfilter(zz_proc, pmnf, lam12)
@@ -188,14 +240,14 @@ def proc_zz():
 
     _, proc_noise = df.roi_measure(zz_proc, roi)
     capB = f'noise = {proc_noise:.1f}'
-    pf.plotAAB(zz_proc, figname='figure 3', capA=f'ZZ_proc', capB=capB, roi=roi, sxy=sxy, ulimit=(-lam12/2, lam12/2))
+    pf.plotAAB(zz_proc, figname='figure 5', capA=f'ZZ_proc', capB=capB, roi=roi, sxy=sxy, ulimit=limit_12, cmap='jet')
 
-    print(f'\n> proc_zz: qxys = {qxys}; pmnf = {pmnf}; proc_noise = {proc_noise:.1f}')
+    print(f'\n> ZZ_proc: qxys = {qxys}; pmnf = {pmnf}; proc_noise = {proc_noise:.1f}')
 
 
 def mayavi():
     cap = gf.path_parts(txt_path)[0]
-    pf.mayaviAA(zz_proc, caption=cap, ulimit=(-lam12/2, lam12/2), view=view)
+    pf.mayaviAA(zz_proc, caption=cap, ulimit=(-lam12/2, lam12/2), view=view, cmap='jet')
 
     print(f'> mayavi: done ...')
 
@@ -209,6 +261,7 @@ def adios():
 btn_readtxt.command(read_txt)
 btn_readhhp.command(read_hhp)
 btn_betascan.command(beta_scan)
+btn_gammascan.command(gamma_scan)
 btn_proc.command(proc_zz)
 btn_inv.command(btn_inv.switch)
 btn_mayavi.command(mayavi)
@@ -341,7 +394,7 @@ def do_qfft():
             phi += ph_roi - ph0_roi
             # phi = 0
             eee[:, :, n] = hha * np.exp(1j * hhh[n]) * np.exp(- 1j * phi)
-
+zz
     eee = eee[:, :, 1:]
     fff = np.fft.fft(eee, axis=2)
     fff = np.fft.fftshift(fff, axes=2)
